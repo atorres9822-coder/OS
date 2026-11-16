@@ -10,6 +10,7 @@ matplotlib.use('TkAgg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+from gui.theme import COLORS, FONTS
 from modules.memory.algorithms import (
     PagingConfig, PageTableEntry, PagingSimulator,
     PageReplacementAlgorithm, PageReplacementSimulator, ReplacementResult,
@@ -150,7 +151,7 @@ class MemoryWindow:
         ttk.Entry(addr_frame, textvariable=self.logical_addr_var, width=15).pack(side=tk.LEFT, padx=5)
         ttk.Button(addr_frame, text="Translate", command=self._translate_address).pack(side=tk.LEFT, padx=5)
         
-        self.translation_result = tk.Text(frame, height=6, bg="#1e1e1e", fg="#ffffff", font=("Consolas", 9))
+        self.translation_result = tk.Text(frame, height=6, bg=COLORS["bg_panel"], fg=COLORS["text_primary"], font=FONTS["mono_small"])
         self.translation_result.pack(fill=tk.BOTH, expand=True)
     
     def _create_paging_visualization(self, parent):
@@ -158,12 +159,12 @@ class MemoryWindow:
         frame = ttk.LabelFrame(parent, text="Memory Map", padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
         
-        self.paging_fig = Figure(figsize=(6, 5), dpi=100, facecolor='#1e1e1e')
+        self.paging_fig = Figure(figsize=(6, 5), dpi=100, facecolor=COLORS['bg_panel'])
         self.paging_ax = self.paging_fig.add_subplot(111)
-        self.paging_ax.set_facecolor('#1e1e1e')
-        self.paging_ax.tick_params(colors='white')
+        self.paging_ax.set_facecolor(COLORS['bg_panel'])
+        self.paging_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.paging_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         self.paging_canvas = FigureCanvasTkAgg(self.paging_fig, master=frame)
         self.paging_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -272,10 +273,10 @@ class MemoryWindow:
     def _draw_paging_visualization(self):
         """Draw paging memory map."""
         self.paging_ax.clear()
-        self.paging_ax.set_facecolor('#1e1e1e')
-        self.paging_ax.tick_params(colors='white')
+        self.paging_ax.set_facecolor(COLORS['bg_panel'])
+        self.paging_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.paging_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         if not hasattr(self, 'paging_config'):
             self.paging_canvas.draw()
@@ -287,7 +288,7 @@ class MemoryWindow:
         page_height = 0.8
         for i in range(config.num_pages):
             y = i * 1.0
-            color = '#0078d7' if (i < len(self.page_table) and self.page_table[i].valid) else '#333333'
+            color = COLORS['accent'] if (i < len(self.page_table) and self.page_table[i].valid) else COLORS['bg_input']
             self.paging_ax.barh(y, 1, height=page_height, left=0, color=color, edgecolor='white', linewidth=0.5)
             label = f"P{i}"
             if i < len(self.page_table) and self.page_table[i].valid:
@@ -311,7 +312,7 @@ class MemoryWindow:
                     used_by = p
                     break
             
-            color = '#00b294' if used_by >= 0 else '#333333'
+            color = COLORS['success'] if used_by >= 0 else COLORS['bg_input']
             self.paging_ax.barh(y, 1, height=page_height, left=frame_x, color=color, edgecolor='white', linewidth=0.5)
             label = f"F{i}"
             if used_by >= 0:
@@ -381,8 +382,8 @@ class MemoryWindow:
             row, col = divmod(i, 2)
             f = ttk.Frame(metrics_frame)
             f.grid(row=row, column=col, padx=10, pady=5, sticky=tk.W)
-            ttk.Label(f, text=f"{label}:", font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
-            self.replace_metrics[key] = ttk.Label(f, text="--", font=("Segoe UI", 9))
+            ttk.Label(f, text=f"{label}:", font=FONTS["small"]).pack(side=tk.LEFT)
+            self.replace_metrics[key] = ttk.Label(f, text="--", font=FONTS["small"])
             self.replace_metrics[key].pack(side=tk.LEFT, padx=5)
         
         # Step-by-step table
@@ -405,12 +406,12 @@ class MemoryWindow:
         frame = ttk.LabelFrame(parent, text="Frame State Timeline", padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
         
-        self.replace_fig = Figure(figsize=(8, 5), dpi=100, facecolor='#1e1e1e')
+        self.replace_fig = Figure(figsize=(8, 5), dpi=100, facecolor=COLORS['bg_panel'])
         self.replace_ax = self.replace_fig.add_subplot(111)
-        self.replace_ax.set_facecolor('#1e1e1e')
-        self.replace_ax.tick_params(colors='white')
+        self.replace_ax.set_facecolor(COLORS['bg_panel'])
+        self.replace_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.replace_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         self.replace_canvas = FigureCanvasTkAgg(self.replace_fig, master=frame)
         self.replace_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -447,9 +448,9 @@ class MemoryWindow:
         dialog = tk.Toplevel(self.parent)
         dialog.title("Algorithm Comparison")
         dialog.geometry("500x300")
-        dialog.configure(bg="#1e1e1e")
+        dialog.configure(bg=COLORS["bg_panel"])
         
-        text = tk.Text(dialog, bg="#1e1e1e", fg="#ffffff", font=("Consolas", 10))
+        text = tk.Text(dialog, bg=COLORS["bg_panel"], fg=COLORS["text_primary"], font=FONTS["mono"])
         text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         text.insert(tk.END, f"{'Algorithm':<12} {'Faults':>8} {'Hits':>8} {'Fault Rate':>12} {'Hit Rate':>10}\n")
@@ -489,10 +490,10 @@ class MemoryWindow:
     def _draw_replacement_visualization(self, result: ReplacementResult):
         """Draw replacement timeline."""
         self.replace_ax.clear()
-        self.replace_ax.set_facecolor('#1e1e1e')
-        self.replace_ax.tick_params(colors='white')
+        self.replace_ax.set_facecolor(COLORS['bg_panel'])
+        self.replace_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.replace_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         if not result.frame_states:
             self.replace_canvas.draw()
@@ -504,10 +505,10 @@ class MemoryWindow:
         # Color map for pages
         all_pages = set(result.reference_string)
         colors = {}
-        palette = ['#0078d7', '#e81123', '#00b294', '#ff8c00', '#8764b8', '#e67e22', '#ff4444', '#00cc6a']
+        palette = ['#6c8cff', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#60a5fa', '#34d399', '#fb923c']
         for i, page in enumerate(sorted(all_pages)):
             colors[page] = palette[i % len(palette)]
-        colors[None] = '#333333'
+        colors[None] = COLORS['bg_input']
         
         for frame_idx in range(num_frames):
             for step in range(num_steps):
@@ -616,7 +617,7 @@ class MemoryWindow:
         
         ttk.Button(addr_frame, text="Translate", command=self._translate_segmented).pack(side=tk.LEFT, padx=10)
         
-        self.seg_translation_result = tk.Text(frame, height=6, bg="#1e1e1e", fg="#ffffff", font=("Consolas", 9))
+        self.seg_translation_result = tk.Text(frame, height=6, bg=COLORS["bg_panel"], fg=COLORS["text_primary"], font=FONTS["mono_small"])
         self.seg_translation_result.pack(fill=tk.BOTH, expand=True)
     
     def _create_segmentation_visualization(self, parent):
@@ -624,12 +625,12 @@ class MemoryWindow:
         frame = ttk.LabelFrame(parent, text="Memory Map", padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
         
-        self.seg_fig = Figure(figsize=(6, 5), dpi=100, facecolor='#1e1e1e')
+        self.seg_fig = Figure(figsize=(6, 5), dpi=100, facecolor=COLORS['bg_panel'])
         self.seg_ax = self.seg_fig.add_subplot(111)
-        self.seg_ax.set_facecolor('#1e1e1e')
-        self.seg_ax.tick_params(colors='white')
+        self.seg_ax.set_facecolor(COLORS['bg_panel'])
+        self.seg_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.seg_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         self.seg_canvas = FigureCanvasTkAgg(self.seg_fig, master=frame)
         self.seg_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -761,16 +762,16 @@ class MemoryWindow:
     def _draw_segmentation_visualization(self):
         """Draw segmentation memory map."""
         self.seg_ax.clear()
-        self.seg_ax.set_facecolor('#1e1e1e')
-        self.seg_ax.tick_params(colors='white')
+        self.seg_ax.set_facecolor(COLORS['bg_panel'])
+        self.seg_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.seg_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         if not self.segments:
             self.seg_canvas.draw()
             return
         
-        colors = ['#0078d7', '#e81123', '#00b294', '#ff8c00', '#8764b8', '#e67e22']
+        colors = ['#6c8cff', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#60a5fa', '#34d399', '#fb923c']
         
         max_addr = max(s.end for s in self.segments) if self.segments else 1000
         
@@ -788,7 +789,7 @@ class MemoryWindow:
             hole_end = self.segments[i+1].base - 1
             if hole_end >= hole_start:
                 self.seg_ax.barh(0, hole_end - hole_start + 1, left=hole_start, height=0.6,
-                               color='#333333', edgecolor='white', linewidth=0.5, hatch='///')
+                               color=COLORS['bg_input'], edgecolor=COLORS['text_secondary'], linewidth=0.5, hatch='///')
                 self.seg_ax.text(hole_start + (hole_end - hole_start + 1)/2, 0, "FREE",
                                ha='center', va='center', color='#888888', fontsize=8)
         
@@ -898,12 +899,12 @@ class MemoryWindow:
             row, col = divmod(i, 2)
             f = ttk.Frame(frame)
             f.grid(row=row, column=col, padx=10, pady=5, sticky=tk.W)
-            ttk.Label(f, text=f"{label}:", font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
-            self.frag_metrics[key] = ttk.Label(f, text="--", font=("Segoe UI", 9))
+            ttk.Label(f, text=f"{label}:", font=FONTS["small"]).pack(side=tk.LEFT)
+            self.frag_metrics[key] = ttk.Label(f, text="--", font=FONTS["small"])
             self.frag_metrics[key].pack(side=tk.LEFT, padx=5)
         
         # Allocation log
-        self.frag_log = tk.Text(frame, height=8, bg="#1e1e1e", fg="#ffffff", font=("Consolas", 9))
+        self.frag_log = tk.Text(frame, height=8, bg=COLORS["bg_panel"], fg=COLORS["text_primary"], font=FONTS["mono_small"])
         self.frag_log.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
     
     def _create_fragmentation_visualization(self, parent):
@@ -911,12 +912,12 @@ class MemoryWindow:
         frame = ttk.LabelFrame(parent, text="Memory Layout", padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
         
-        self.frag_fig = Figure(figsize=(8, 4), dpi=100, facecolor='#1e1e1e')
+        self.frag_fig = Figure(figsize=(8, 4), dpi=100, facecolor=COLORS['bg_panel'])
         self.frag_ax = self.frag_fig.add_subplot(111)
-        self.frag_ax.set_facecolor('#1e1e1e')
-        self.frag_ax.tick_params(colors='white')
+        self.frag_ax.set_facecolor(COLORS['bg_panel'])
+        self.frag_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.frag_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         self.frag_canvas = FigureCanvasTkAgg(self.frag_fig, master=frame)
         self.frag_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -1010,9 +1011,9 @@ class MemoryWindow:
         dialog = tk.Toplevel(self.parent)
         dialog.title("Algorithm Comparison")
         dialog.geometry("600x300")
-        dialog.configure(bg="#1e1e1e")
+        dialog.configure(bg=COLORS["bg_panel"])
         
-        text = tk.Text(dialog, bg="#1e1e1e", fg="#ffffff", font=("Consolas", 10))
+        text = tk.Text(dialog, bg=COLORS["bg_panel"], fg=COLORS["text_primary"], font=FONTS["mono"])
         text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         text.insert(tk.END, f"{'Algorithm':<15} {'Allocated':>10} {'Free':>10} {'Internal':>10} {'External':>10}\n")
@@ -1051,17 +1052,17 @@ class MemoryWindow:
     def _draw_fragmentation_visualization(self, result: FragmentationResult = None):
         """Draw fragmentation memory layout."""
         self.frag_ax.clear()
-        self.frag_ax.set_facecolor('#1e1e1e')
-        self.frag_ax.tick_params(colors='white')
+        self.frag_ax.set_facecolor(COLORS['bg_panel'])
+        self.frag_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.frag_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         blocks = result.final_blocks if result else self.memory_blocks
         if not blocks:
             self.frag_canvas.draw()
             return
         
-        colors = ['#0078d7', '#e81123', '#00b294', '#ff8c00', '#8764b8', '#e67e22']
+        colors = ['#6c8cff', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#60a5fa', '#34d399', '#fb923c']
         color_idx = 0
         
         max_addr = max(b.end for b in blocks)
@@ -1072,7 +1073,7 @@ class MemoryWindow:
                 color_idx += 1
                 label = f"{block.process_id} ({block.size})"
             else:
-                color = '#333333'
+                color = COLORS['bg_input']
                 label = f"FREE ({block.size})"
             
             self.frag_ax.barh(0, block.size, left=block.start, height=0.6,

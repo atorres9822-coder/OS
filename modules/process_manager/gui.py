@@ -10,6 +10,7 @@ matplotlib.use('TkAgg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+from gui.theme import COLORS, FONTS
 from modules.process_manager.algorithms import (
     ProcessManager, SimulatedProcess, ProcessState, TransitionReason,
     MultiprogrammingResult, MultiprocessingResult, CPUScheduleEvent,
@@ -176,7 +177,7 @@ class ProcessManagerWindow:
             self.mp_metrics[key].pack(side=tk.LEFT, padx=3)
         
         # Schedule log
-        self.mp_log = tk.Text(frame, height=10, bg="#1e1e1e", fg="#ffffff", font=("Consolas", 8))
+        self.mp_log = tk.Text(frame, height=10, bg=COLORS["bg_panel"], fg=COLORS["text_primary"], font=FONTS["mono_small"])
         self.mp_log.pack(fill=tk.BOTH, expand=True)
     
     def _create_mp_visualization(self, parent):
@@ -184,12 +185,12 @@ class ProcessManagerWindow:
         frame = ttk.LabelFrame(parent, text="CPU Timeline", padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
         
-        self.mp_fig = Figure(figsize=(8, 4), dpi=100, facecolor='#1e1e1e')
+        self.mp_fig = Figure(figsize=(8, 4), dpi=100, facecolor=COLORS['bg_panel'])
         self.mp_ax = self.mp_fig.add_subplot(111)
-        self.mp_ax.set_facecolor('#1e1e1e')
-        self.mp_ax.tick_params(colors='white')
+        self.mp_ax.set_facecolor(COLORS['bg_panel'])
+        self.mp_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.mp_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         self.mp_canvas = FigureCanvasTkAgg(self.mp_fig, master=frame)
         self.mp_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -323,7 +324,7 @@ class ProcessManagerWindow:
         self.mpc_core_frame = core_frame
         
         # Schedule log
-        self.mpc_log = tk.Text(frame, height=10, bg="#1e1e1e", fg="#ffffff", font=("Consolas", 8))
+        self.mpc_log = tk.Text(frame, height=10, bg=COLORS["bg_panel"], fg=COLORS["text_primary"], font=FONTS["mono_small"])
         self.mpc_log.pack(fill=tk.BOTH, expand=True)
     
     def _create_mpc_visualization(self, parent):
@@ -331,12 +332,12 @@ class ProcessManagerWindow:
         frame = ttk.LabelFrame(parent, text="Multi-Core Timeline", padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
         
-        self.mpc_fig = Figure(figsize=(8, 5), dpi=100, facecolor='#1e1e1e')
+        self.mpc_fig = Figure(figsize=(8, 5), dpi=100, facecolor=COLORS['bg_panel'])
         self.mpc_ax = self.mpc_fig.add_subplot(111)
-        self.mpc_ax.set_facecolor('#1e1e1e')
-        self.mpc_ax.tick_params(colors='white')
+        self.mpc_ax.set_facecolor(COLORS['bg_panel'])
+        self.mpc_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.mpc_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         self.mpc_canvas = FigureCanvasTkAgg(self.mpc_fig, master=frame)
         self.mpc_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -353,7 +354,7 @@ class ProcessManagerWindow:
                  font=("Segoe UI", 14, "bold")).pack(pady=10)
         
         # Canvas for diagram
-        self.state_canvas = tk.Canvas(frame, bg="#1e1e1e", highlightthickness=0)
+        self.state_canvas = tk.Canvas(frame, bg=COLORS["bg_panel"], highlightthickness=0)
         self.state_canvas.pack(fill=tk.BOTH, expand=True)
         
         # Explanation
@@ -371,8 +372,8 @@ class ProcessManagerWindow:
         for state, desc in explanations.items():
             f = ttk.Frame(exp_frame)
             f.pack(fill=tk.X, pady=2)
-            ttk.Label(f, text=f"{state}:", font=("Segoe UI", 9, "bold"), width=12).pack(side=tk.LEFT)
-            ttk.Label(f, text=desc, font=("Segoe UI", 9), wraplength=600).pack(side=tk.LEFT, padx=5)
+            ttk.Label(f, text=f"{state}:", font=FONTS["small"], width=12).pack(side=tk.LEFT)
+            ttk.Label(f, text=desc, font=FONTS["small"], wraplength=600).pack(side=tk.LEFT, padx=5)
         
         # Transitions
         trans_frame = ttk.LabelFrame(frame, text="Transitions", padding=10)
@@ -390,8 +391,8 @@ class ProcessManagerWindow:
         for trans, desc in transitions:
             f = ttk.Frame(trans_frame)
             f.pack(fill=tk.X, pady=2)
-            ttk.Label(f, text=f"{trans}:", font=("Segoe UI", 9, "bold"), width=22).pack(side=tk.LEFT)
-            ttk.Label(f, text=desc, font=("Segoe UI", 9)).pack(side=tk.LEFT, padx=5)
+            ttk.Label(f, text=f"{trans}:", font=FONTS["small"], width=22).pack(side=tk.LEFT)
+            ttk.Label(f, text=desc, font=FONTS["small"]).pack(side=tk.LEFT, padx=5)
         
         # Draw diagram after window is ready
         self.parent.after(100, self._draw_state_diagram)
@@ -426,7 +427,7 @@ class ProcessManagerWindow:
             # Rounded rectangle
             w, h = 120, 50
             c.create_oval(x, y, x + w, y + h, fill=color, outline="white", width=2)
-            c.create_text(x + w//2, y + h//2, text=state, fill="white", font=("Segoe UI", 10, "bold"))
+            c.create_text(x + w//2, y + h//2, text=state, fill="white", font=FONTS["body"])
         
         # Draw transitions
         transitions = [
@@ -589,10 +590,10 @@ class ProcessManagerWindow:
     def _draw_mp_gantt(self):
         """Draw multiprogramming Gantt chart."""
         self.mp_ax.clear()
-        self.mp_ax.set_facecolor('#1e1e1e')
-        self.mp_ax.tick_params(colors='white')
+        self.mp_ax.set_facecolor(COLORS['bg_panel'])
+        self.mp_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.mp_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         if not self.mp_result:
             self.mp_canvas.draw()
@@ -628,7 +629,7 @@ class ProcessManagerWindow:
         
         # Colors
         procs = list(proc_intervals.keys())
-        colors = ['#0078d7', '#e81123', '#00b294', '#ff8c00', '#8764b8', '#e67e22']
+        colors = ['#6c8cff', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#60a5fa', '#34d399', '#fb923c']
         color_map = {p: colors[i % len(colors)] for i, p in enumerate(procs)}
         
         y = 0.5
@@ -810,8 +811,8 @@ class ProcessManagerWindow:
         for core_id, util in sorted(r.core_utilizations.items()):
             f = ttk.Frame(self.mpc_core_frame)
             f.pack(side=tk.LEFT, padx=20, pady=5)
-            ttk.Label(f, text=f"Core {core_id}:", font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
-            ttk.Label(f, text=f"{util:.1f}%", font=("Segoe UI", 9)).pack(side=tk.LEFT, padx=5)
+            ttk.Label(f, text=f"Core {core_id}:", font=FONTS["small"]).pack(side=tk.LEFT)
+            ttk.Label(f, text=f"{util:.1f}%", font=FONTS["small"]).pack(side=tk.LEFT, padx=5)
         
         # Log
         self.mpc_log.delete(1.0, tk.END)
@@ -826,10 +827,10 @@ class ProcessManagerWindow:
     def _draw_mpc_gantt(self):
         """Draw multiprocessing Gantt chart."""
         self.mpc_ax.clear()
-        self.mpc_ax.set_facecolor('#1e1e1e')
-        self.mpc_ax.tick_params(colors='white')
+        self.mpc_ax.set_facecolor(COLORS['bg_panel'])
+        self.mpc_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.mpc_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         if not self.mpc_result:
             self.mpc_canvas.draw()
@@ -845,7 +846,7 @@ class ProcessManagerWindow:
                 all_procs.add(event.process_id)
         
         procs = sorted(all_procs)
-        colors = ['#0078d7', '#e81123', '#00b294', '#ff8c00', '#8764b8', '#e67e22']
+        colors = ['#6c8cff', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#60a5fa', '#34d399', '#fb923c']
         color_map = {p: colors[i % len(colors)] for i, p in enumerate(procs)}
         
         # Draw per-core timelines

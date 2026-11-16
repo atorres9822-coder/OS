@@ -4,6 +4,7 @@ Provides a reusable simulation playback system with step-by-step execution contr
 """
 
 from typing import List, Dict, Any, Optional, Callable
+from gui.theme import COLORS, FONTS
 from dataclasses import dataclass, field
 from enum import Enum
 import copy
@@ -239,7 +240,7 @@ class PlaybackControls:
     def __init__(self, parent: 'tk.Frame', engine: SimulationEngine):
         self.parent = parent
         self.engine = engine
-        self.frame = tk.Frame(parent, bg="#1e1e1e", height=50)
+        self.frame = tk.Frame(parent, bg=COLORS["bg_panel"], height=50)
         self.frame.pack(fill=tk.X, side=tk.BOTTOM, padx=10, pady=5)
         self.frame.pack_propagate(False)
         self._create_controls()
@@ -248,54 +249,54 @@ class PlaybackControls:
         import tkinter as tk
         
         # Control buttons
-        btn_frame = tk.Frame(self.frame, bg="#1e1e1e")
+        btn_frame = tk.Frame(self.frame, bg=COLORS["bg_panel"])
         btn_frame.pack(side=tk.LEFT, padx=10)
         
         self.btn_restart = tk.Button(
             btn_frame, text="⏮", width=3,
-            bg="#333333", fg="#ffffff", bd=0,
-            activebackground="#444444",
+            bg=COLORS["bg_card"], fg=COLORS["text_primary"], bd=0,
+            activebackground=COLORS["bg_hover"],
             command=self.engine.stop
         )
         self.btn_restart.pack(side=tk.LEFT, padx=2)
         
         self.btn_step_back = tk.Button(
             btn_frame, text="⏪", width=3,
-            bg="#333333", fg="#ffffff", bd=0,
-            activebackground="#444444",
+            bg=COLORS["bg_card"], fg=COLORS["text_primary"], bd=0,
+            activebackground=COLORS["bg_hover"],
             command=self.engine.step_backward
         )
         self.btn_step_back.pack(side=tk.LEFT, padx=2)
         
         self.btn_play = tk.Button(
             btn_frame, text="▶", width=3,
-            bg="#0078d7", fg="#ffffff", bd=0,
-            activebackground="#1084d8",
+            bg=COLORS["accent"], fg=COLORS["text_primary"], bd=0,
+            activebackground=COLORS["accent_hover"],
             command=self.engine.start
         )
         self.btn_play.pack(side=tk.LEFT, padx=2)
         
         self.btn_pause = tk.Button(
             btn_frame, text="⏸", width=3,
-            bg="#333333", fg="#ffffff", bd=0,
-            activebackground="#444444",
+            bg=COLORS["bg_card"], fg=COLORS["text_primary"], bd=0,
+            activebackground=COLORS["bg_hover"],
             command=self.engine.pause
         )
         self.btn_pause.pack(side=tk.LEFT, padx=2)
         
         self.btn_step_forward = tk.Button(
             btn_frame, text="⏩", width=3,
-            bg="#333333", fg="#ffffff", bd=0,
-            activebackground="#444444",
+            bg=COLORS["bg_card"], fg=COLORS["text_primary"], bd=0,
+            activebackground=COLORS["bg_hover"],
             command=self.engine.step_forward
         )
         self.btn_step_forward.pack(side=tk.LEFT, padx=2)
         
         # Speed control
-        speed_frame = tk.Frame(self.frame, bg="#1e1e1e")
+        speed_frame = tk.Frame(self.frame, bg=COLORS["bg_panel"])
         speed_frame.pack(side=tk.LEFT, padx=20)
         
-        tk.Label(speed_frame, text="Speed:", bg="#1e1e1e", fg="#ffffff").pack(side=tk.LEFT)
+        tk.Label(speed_frame, text="Speed:", bg=COLORS["bg_panel"], fg=COLORS["text_primary"]).pack(side=tk.LEFT)
         
         self.speed_var = tk.DoubleVar(value=1.0)
         self.speed_scale = tk.Scale(
@@ -305,17 +306,17 @@ class PlaybackControls:
             resolution=0.1,
             orient=tk.HORIZONTAL,
             variable=self.speed_var,
-            bg="#1e1e1e",
-            fg="#ffffff",
+            bg=COLORS["bg_panel"],
+            fg=COLORS["text_primary"],
             highlightthickness=0,
-            troughcolor="#333333",
+            troughcolor=COLORS["bg_input"],
             length=150,
             command=self._on_speed_change
         )
         self.speed_scale.pack(side=tk.LEFT, padx=5)
         
         # Progress bar
-        progress_frame = tk.Frame(self.frame, bg="#1e1e1e")
+        progress_frame = tk.Frame(self.frame, bg=COLORS["bg_panel"])
         progress_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=20)
         
         self.progress_var = tk.DoubleVar(value=0.0)
@@ -325,10 +326,10 @@ class PlaybackControls:
             to=100,
             orient=tk.HORIZONTAL,
             variable=self.progress_var,
-            bg="#1e1e1e",
-            fg="#ffffff",
+            bg=COLORS["bg_panel"],
+            fg=COLORS["text_primary"],
             highlightthickness=0,
-            troughcolor="#333333",
+            troughcolor=COLORS["bg_input"],
             showvalue=False,
             command=self._on_progress_change
         )
@@ -338,9 +339,9 @@ class PlaybackControls:
         self.time_label = tk.Label(
             self.frame,
             text="Time: 0.00",
-            bg="#1e1e1e",
-            fg="#ffffff",
-            font=("Segoe UI", 9)
+            bg=COLORS["bg_panel"],
+            fg=COLORS["text_primary"],
+            font=FONTS["small"]
         )
         self.time_label.pack(side=tk.RIGHT, padx=10)
         

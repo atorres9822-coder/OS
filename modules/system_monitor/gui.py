@@ -10,6 +10,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import random
 import time
+from gui.theme import COLORS, FONTS
 
 
 class SystemMonitorWindow:
@@ -82,8 +83,8 @@ class SystemMonitorWindow:
             row, col = divmod(i, 2)
             f = ttk.Frame(frame)
             f.grid(row=row, column=col, padx=10, pady=5, sticky=tk.W)
-            ttk.Label(f, text=f"{label}:", font=("Segoe UI", 10, "bold")).pack(side=tk.LEFT)
-            self.metric_labels[key] = ttk.Label(f, text=default, font=("Segoe UI", 10))
+            ttk.Label(f, text=f"{label}:", font=FONTS["body"]).pack(side=tk.LEFT)
+            self.metric_labels[key] = ttk.Label(f, text=default, font=FONTS["body"])
             self.metric_labels[key].pack(side=tk.LEFT, padx=10)
     
     def _create_process_panel(self, parent):
@@ -123,7 +124,7 @@ class SystemMonitorWindow:
         ttk.Label(res_frame, text="Available:").pack(side=tk.LEFT)
         self.resource_labels = []
         for i in range(3):
-            lbl = ttk.Label(res_frame, text=f"R{i}: --", font=("Segoe UI", 9))
+            lbl = ttk.Label(res_frame, text=f"R{i}: --", font=FONTS["small"])
             lbl.pack(side=tk.LEFT, padx=10)
             self.resource_labels.append(lbl)
     
@@ -132,24 +133,24 @@ class SystemMonitorWindow:
         frame = ttk.LabelFrame(parent, text="Performance Charts", padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
         
-        self.fig = Figure(figsize=(8, 5), dpi=100, facecolor='#1e1e1e')
+        self.fig = Figure(figsize=(8, 5), dpi=100, facecolor=COLORS['bg_panel'])
         
         # CPU Usage chart
         self.cpu_ax = self.fig.add_subplot(211)
-        self.cpu_ax.set_facecolor('#1e1e1e')
-        self.cpu_ax.tick_params(colors='white')
+        self.cpu_ax.set_facecolor(COLORS['bg_panel'])
+        self.cpu_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.cpu_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         self.cpu_ax.set_title('CPU Utilization', color='white')
         self.cpu_ax.set_ylabel('%', color='white')
         self.cpu_ax.set_ylim(0, 100)
         
         # Memory Usage chart
         self.mem_ax = self.fig.add_subplot(212)
-        self.mem_ax.set_facecolor('#1e1e1e')
-        self.mem_ax.tick_params(colors='white')
+        self.mem_ax.set_facecolor(COLORS['bg_panel'])
+        self.mem_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.mem_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         self.mem_ax.set_title('Memory Usage', color='white')
         self.mem_ax.set_ylabel('MB', color='white')
         self.mem_ax.set_ylim(0, 1024)
@@ -266,29 +267,29 @@ class SystemMonitorWindow:
     def _update_charts(self):
         """Update charts."""
         self.cpu_ax.clear()
-        self.cpu_ax.set_facecolor('#1e1e1e')
-        self.cpu_ax.tick_params(colors='white')
+        self.cpu_ax.set_facecolor(COLORS['bg_panel'])
+        self.cpu_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.cpu_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         self.mem_ax.clear()
-        self.mem_ax.set_facecolor('#1e1e1e')
-        self.mem_ax.tick_params(colors='white')
+        self.mem_ax.set_facecolor(COLORS['bg_panel'])
+        self.mem_ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.mem_ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         if len(self.history["time"]) > 1:
             # Relative time
             times = [t - self.history["time"][0] for t in self.history["time"]]
             
-            self.cpu_ax.plot(times, self.history["cpu"], color='#0078d7', linewidth=2)
-            self.cpu_ax.fill_between(times, self.history["cpu"], alpha=0.3, color='#0078d7')
+            self.cpu_ax.plot(times, self.history["cpu"], color=COLORS['accent'], linewidth=2)
+            self.cpu_ax.fill_between(times, self.history["cpu"], alpha=0.3, color=COLORS['accent'])
             self.cpu_ax.set_ylim(0, 100)
             self.cpu_ax.set_title('CPU Utilization', color='white')
             self.cpu_ax.set_ylabel('%', color='white')
             
-            self.mem_ax.plot(times, self.history["memory"], color='#00b294', linewidth=2)
-            self.mem_ax.fill_between(times, self.history["memory"], alpha=0.3, color='#00b294')
+            self.mem_ax.plot(times, self.history["memory"], color=COLORS['success'], linewidth=2)
+            self.mem_ax.fill_between(times, self.history["memory"], alpha=0.3, color=COLORS['success'])
             self.mem_ax.set_ylim(0, self.system_state["memory_total"])
             self.mem_ax.set_title('Memory Usage', color='white')
             self.mem_ax.set_ylabel('MB', color='white')

@@ -10,6 +10,7 @@ matplotlib.use('TkAgg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+from gui.theme import COLORS, FONTS
 from modules.disk_scheduling.algorithms import (
     DiskScheduler, DiskConfig, DiskAlgorithm, DiskResult,
     generate_sample_disk_config
@@ -107,8 +108,8 @@ class DiskSchedulingWindow:
             row, col = divmod(i, 2)
             f = ttk.Frame(metrics_frame)
             f.grid(row=row, column=col, padx=10, pady=5, sticky=tk.W)
-            ttk.Label(f, text=f"{label}:", font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
-            self.metrics[key] = ttk.Label(f, text="--", font=("Segoe UI", 9))
+            ttk.Label(f, text=f"{label}:", font=FONTS["small"]).pack(side=tk.LEFT)
+            self.metrics[key] = ttk.Label(f, text="--", font=FONTS["small"])
             self.metrics[key].pack(side=tk.LEFT, padx=5)
         
         # Service order table
@@ -131,12 +132,12 @@ class DiskSchedulingWindow:
         frame = ttk.LabelFrame(parent, text="Disk Head Movement", padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
         
-        self.fig = Figure(figsize=(8, 5), dpi=100, facecolor='#1e1e1e')
+        self.fig = Figure(figsize=(8, 5), dpi=100, facecolor=COLORS['bg_panel'])
         self.ax = self.fig.add_subplot(111)
-        self.ax.set_facecolor('#1e1e1e')
-        self.ax.tick_params(colors='white')
+        self.ax.set_facecolor(COLORS['bg_panel'])
+        self.ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=frame)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -214,7 +215,7 @@ class DiskSchedulingWindow:
         dialog = tk.Toplevel(self.parent)
         dialog.title("Algorithm Comparison")
         dialog.geometry("600x350")
-        dialog.configure(bg="#1e1e1e")
+        dialog.configure(bg=COLORS["bg_panel"])
         
         # Table
         columns = ("Algorithm", "Total Movement", "Avg Seek")
@@ -233,15 +234,15 @@ class DiskSchedulingWindow:
         chart_frame = ttk.Frame(dialog)
         chart_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
         
-        fig = Figure(figsize=(6, 3), dpi=100, facecolor='#1e1e1e')
+        fig = Figure(figsize=(6, 3), dpi=100, facecolor=COLORS['bg_panel'])
         ax = fig.add_subplot(111)
-        ax.set_facecolor('#1e1e1e')
-        ax.tick_params(colors='white')
+        ax.set_facecolor(COLORS['bg_panel'])
+        ax.tick_params(colors=COLORS['text_secondary'])
         
         algos = [r.algorithm.value.upper() for r in results.values()]
         totals = [r.total_head_movement for r in results.values()]
         
-        bars = ax.bar(algos, totals, color=['#0078d7', '#e81123', '#00b294', '#ff8c00', '#8764b8', '#e67e22'])
+        bars = ax.bar(algos, totals, color=['#6c8cff', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#60a5fa', '#34d399', '#fb923c'])
         ax.set_ylabel('Total Head Movement', color='white')
         ax.set_title('Algorithm Comparison', color='white')
         
@@ -275,10 +276,10 @@ class DiskSchedulingWindow:
     def _draw_visualization(self):
         """Draw disk head movement visualization."""
         self.ax.clear()
-        self.ax.set_facecolor('#1e1e1e')
-        self.ax.tick_params(colors='white')
+        self.ax.set_facecolor(COLORS['bg_panel'])
+        self.ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         if not self.current_result or not self.config:
             self.canvas.draw()
@@ -288,19 +289,19 @@ class DiskSchedulingWindow:
         config = self.config
         
         # Draw cylinder axis
-        self.ax.axhline(y=0, color='#555555', linewidth=1)
+        self.ax.axhline(y=0, color=COLORS['border'], linewidth=1)
         
         # Mark cylinders
         min_cyl, max_cyl = config.cylinder_range
         
         # Draw requests as markers
         for req in config.requests:
-            self.ax.plot(req, 0, 'ro', markersize=10, markerfacecolor='#e81123', markeredgecolor='white')
+            self.ax.plot(req, 0, 'ro', markersize=10, markerfacecolor=COLORS['danger'], markeredgecolor='white')
             self.ax.text(req, 0.15, str(req), ha='center', va='bottom', color='white', fontsize=8)
         
         # Draw initial head
-        self.ax.plot(config.initial_head, 0, 'go', markersize=12, markerfacecolor='#00b294', markeredgecolor='white')
-        self.ax.text(config.initial_head, -0.15, f"START\n{config.initial_head}", ha='center', va='top', color='#00b294', fontsize=8, fontweight='bold')
+        self.ax.plot(config.initial_head, 0, 'go', markersize=12, markerfacecolor=COLORS['success'], markeredgecolor='white')
+        self.ax.text(config.initial_head, -0.15, f"START\n{config.initial_head}", ha='center', va='top', color=COLORS['success'], fontsize=8, fontweight='bold')
         
         # Draw movement path
         if r.execution_path:
@@ -310,10 +311,10 @@ class DiskSchedulingWindow:
                 y = 0.3 + (i % 3) * 0.15  # Stagger lines
                 self.ax.annotate('',
                     xy=(to_cyl, y), xytext=(from_cyl, y),
-                    arrowprops=dict(arrowstyle='->', color='#0078d7', lw=2))
+                    arrowprops=dict(arrowstyle='->', color=COLORS['accent'], lw=2))
                 # Distance label
                 mid = (from_cyl + to_cyl) / 2
-                self.ax.text(mid, y + 0.02, str(dist), ha='center', va='bottom', color='#0078d7', fontsize=8)
+                self.ax.text(mid, y + 0.02, str(dist), ha='center', va='bottom', color=COLORS['accent'], fontsize=8)
         
         self.ax.set_xlim(min_cyl - 10, max_cyl + 10)
         self.ax.set_ylim(-0.5, 1.0)
@@ -322,10 +323,10 @@ class DiskSchedulingWindow:
         self.ax.set_yticks([])
         
         # Legend
-        self.ax.plot([], [], 'go', markersize=10, label='Initial Head', color='#00b294')
-        self.ax.plot([], [], 'ro', markersize=10, label='Requests', color='#e81123')
-        self.ax.plot([], [], '-', color='#0078d7', label='Head Movement')
-        self.ax.legend(loc='upper right', facecolor='#2d2d2d', edgecolor='#555555', labelcolor='white')
+        self.ax.plot([], [], 'go', markersize=10, label='Initial Head', color=COLORS['success'])
+        self.ax.plot([], [], 'ro', markersize=10, label='Requests', color=COLORS['danger'])
+        self.ax.plot([], [], '-', color=COLORS['accent'], label='Head Movement')
+        self.ax.legend(loc='upper right', facecolor=COLORS['bg_card'], edgecolor=COLORS['border'], labelcolor=COLORS['text_primary'])
         
         self.fig.tight_layout()
         self.canvas.draw()

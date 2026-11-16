@@ -11,6 +11,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 
+from gui.theme import COLORS, FONTS
 from modules.cpu_scheduling.algorithms import (
     CPUScheduler, Process, AlgorithmType, SchedulingResult, GanttEntry
 )
@@ -175,8 +176,8 @@ class CPUSchedulingWindow:
             row, col = divmod(i, 3)
             frame = ttk.Frame(self.metrics_frame)
             frame.grid(row=row, column=col, padx=10, pady=5, sticky=tk.W)
-            ttk.Label(frame, text=f"{label}:", font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
-            self.metric_labels[key] = ttk.Label(frame, text="--", font=("Segoe UI", 9))
+            ttk.Label(frame, text=f"{label}:", font=FONTS["small"]).pack(side=tk.LEFT)
+            self.metric_labels[key] = ttk.Label(frame, text="--", font=FONTS["small"])
             self.metric_labels[key].pack(side=tk.LEFT, padx=5)
         
         # Process results table
@@ -200,12 +201,12 @@ class CPUSchedulingWindow:
         viz_frame.pack(fill=tk.BOTH, expand=True)
         
         # Matplotlib figure
-        self.fig = Figure(figsize=(8, 4), dpi=100, facecolor='#1e1e1e')
+        self.fig = Figure(figsize=(8, 4), dpi=100, facecolor=COLORS['bg_panel'])
         self.ax = self.fig.add_subplot(111)
-        self.ax.set_facecolor('#1e1e1e')
-        self.ax.tick_params(colors='white')
+        self.ax.set_facecolor(COLORS['bg_panel'])
+        self.ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=viz_frame)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -217,9 +218,9 @@ class CPUSchedulingWindow:
         self.explanation_text = tk.Text(
             self.explanation_frame,
             height=6,
-            bg="#1e1e1e",
-            fg="#ffffff",
-            font=("Consolas", 9),
+            bg=COLORS["bg_panel"],
+            fg=COLORS["text_primary"],
+            font=FONTS["mono_small"],
             wrap=tk.WORD,
             state=tk.DISABLED
         )
@@ -418,10 +419,10 @@ class CPUSchedulingWindow:
     def _draw_gantt_chart(self):
         """Draw the Gantt chart."""
         self.ax.clear()
-        self.ax.set_facecolor('#1e1e1e')
-        self.ax.tick_params(colors='white')
+        self.ax.set_facecolor(COLORS['bg_panel'])
+        self.ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         if not self.current_result:
             self.canvas.draw()
@@ -435,7 +436,7 @@ class CPUSchedulingWindow:
         # Color map for processes
         pids = list(set(g.pid for g in gantt if not g.is_idle))
         colors = {}
-        color_palette = ['#0078d7', '#e81123', '#00b294', '#ff8c00', '#8764b8', '#e67e22', '#00cc6a', '#ff4444']
+        color_palette = ['#6c8cff', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#60a5fa', '#34d399', '#fb923c']
         for i, pid in enumerate(pids):
             colors[pid] = color_palette[i % len(color_palette)]
         colors["IDLE"] = "#333333"

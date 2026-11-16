@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Dict, List, Optional, Callable
 import uuid
+from gui.theme import COLORS, FONTS, apply_ttk_style
 
 # Import module factories
 from modules.cpu_scheduling.gui import create_cpu_scheduling_module
@@ -41,7 +42,7 @@ class Window:
         self.frame.withdraw()  # Hide initially
         
         # Title bar
-        self.title_bar = tk.Frame(self.frame, bg="#2d2d2d", height=30)
+        self.title_bar = tk.Frame(self.frame, bg=COLORS["bg_titlebar"], height=30)
         self.title_bar.pack(fill=tk.X)
         self.title_bar.pack_propagate(False)
         
@@ -49,14 +50,14 @@ class Window:
         title_label = tk.Label(
             self.title_bar, 
             text=self.title, 
-            bg="#2d2d2d", 
-            fg="#ffffff",
+            bg=COLORS["bg_titlebar"], 
+            fg=COLORS["text_primary"],
             font=("Segoe UI", 9, "bold")
         )
         title_label.pack(side=tk.LEFT, padx=10, pady=5)
         
         # Window controls
-        controls_frame = tk.Frame(self.title_bar, bg="#2d2d2d")
+        controls_frame = tk.Frame(self.title_bar, bg=COLORS["bg_titlebar"])
         controls_frame.pack(side=tk.RIGHT, padx=5)
         
         # Minimize button
@@ -64,10 +65,10 @@ class Window:
             controls_frame,
             text="—",
             width=3,
-            bg="#2d2d2d",
-            fg="#ffffff",
+            bg=COLORS["bg_titlebar"],
+            fg=COLORS["text_primary"],
             bd=0,
-            activebackground="#3d3d3d",
+            activebackground=COLORS["bg_hover"],
             command=self.minimize
         )
         minimize_btn.pack(side=tk.LEFT, padx=2)
@@ -77,10 +78,10 @@ class Window:
             controls_frame,
             text="□",
             width=3,
-            bg="#2d2d2d",
-            fg="#ffffff",
+            bg=COLORS["bg_titlebar"],
+            fg=COLORS["text_primary"],
             bd=0,
-            activebackground="#3d3d3d",
+            activebackground=COLORS["bg_hover"],
             command=self.toggle_maximize
         )
         self.maximize_btn.pack(side=tk.LEFT, padx=2)
@@ -90,16 +91,16 @@ class Window:
             controls_frame,
             text="×",
             width=3,
-            bg="#2d2d2d",
-            fg="#ffffff",
+            bg=COLORS["bg_titlebar"],
+            fg=COLORS["text_primary"],
             bd=0,
-            activebackground="#e81123",
+            activebackground=COLORS["danger"],
             command=self.close
         )
         close_btn.pack(side=tk.LEFT, padx=2)
         
         # Content area
-        self.content_frame = tk.Frame(self.frame, bg="#1e1e1e")
+        self.content_frame = tk.Frame(self.frame, bg=COLORS["bg_panel"])
         self.content_frame.pack(fill=tk.BOTH, expand=True)
         
         # Bind events for dragging
@@ -190,15 +191,15 @@ class DesktopIcon:
         self.icon_id = self.canvas.create_rectangle(
             self.x, self.y, 
             self.x + 80, self.y + 80,
-            fill=self.icon_color, outline="#555555", width=2,
+            fill=self.icon_color, outline=COLORS["border"], width=2,
             tags="icon"
         )
         # Icon text
         self.text_id = self.canvas.create_text(
             self.x + 40, self.y + 95,
             text=self.text,
-            fill="#ffffff",
-            font=("Segoe UI", 8),
+            fill=COLORS["text_primary"],
+            font=FONTS["small"],
             width=80,
             tags="icon_text"
         )
@@ -218,9 +219,9 @@ class DesktopIcon:
     def set_selected(self, selected: bool):
         self.is_selected = selected
         if selected:
-            self.canvas.itemconfig(self.icon_id, outline="#0078d7", width=3)
+            self.canvas.itemconfig(self.icon_id, outline=COLORS["accent"], width=2)
         else:
-            self.canvas.itemconfig(self.icon_id, outline="#555555", width=2)
+            self.canvas.itemconfig(self.icon_id, outline=COLORS["border"], width=2)
     
     def get_bounds(self):
         return (self.x, self.y, self.x + 80, self.y + 115)
@@ -237,12 +238,12 @@ class TaskbarButton:
             parent,
             text=window.title,
             bg="#333333",
-            fg="#ffffff",
+            fg=COLORS["text_primary"],
             bd=0,
             padx=15,
             pady=5,
             font=("Segoe UI", 9),
-            activebackground="#444444",
+            activebackground=COLORS["bg_hover"],
             command=self._on_click
         )
         self.button.pack(side=tk.LEFT, padx=2, pady=2)
@@ -259,7 +260,7 @@ class TaskbarButton:
         if self.window.is_minimized or not (self.window.frame and self.window.frame.winfo_viewable()):
             self.button.config(bg="#333333")
         else:
-            self.button.config(bg="#0078d7")
+            self.button.config(bg=COLORS["desktop_bg"])
     
     def destroy(self):
         self.button.destroy()
@@ -284,23 +285,23 @@ class StartMenu:
         self.menu_window = tk.Toplevel(self.root)
         self.menu_window.overrideredirect(True)
         self.menu_window.geometry(f"220x350+{x}+{y-350}")
-        self.menu_window.configure(bg="#2d2d2d")
+        self.menu_window.configure(bg=COLORS["bg_titlebar"])
         self.menu_window.attributes("-topmost", True)
         
         # Header
-        header = tk.Frame(self.menu_window, bg="#1e1e1e", height=50)
+        header = tk.Frame(self.menu_window, bg=COLORS["bg_panel"], height=50)
         header.pack(fill=tk.X)
         header.pack_propagate(False)
         tk.Label(
             header, 
             text="Mini OS", 
-            bg="#1e1e1e", 
-            fg="#ffffff", 
+            bg=COLORS["bg_panel"], 
+            fg=COLORS["text_primary"], 
             font=("Segoe UI", 12, "bold")
         ).pack(pady=10)
         
         # Separator
-        tk.Frame(self.menu_window, bg="#555555", height=1).pack(fill=tk.X, padx=5)
+        tk.Frame(self.menu_window, bg=COLORS["border"], height=1).pack(fill=tk.X, padx=5)
         
         # App list
         apps = [
@@ -316,33 +317,33 @@ class StartMenu:
             btn = tk.Button(
                 self.menu_window,
                 text=f"  {icon}  {name}",
-                bg="#2d2d2d",
-                fg="#ffffff",
+                bg=COLORS["bg_titlebar"],
+                fg=COLORS["text_primary"],
                 bd=0,
                 anchor="w",
                 padx=20,
                 pady=10,
                 font=("Segoe UI", 10),
-                activebackground="#3d3d3d",
+                activebackground=COLORS["bg_hover"],
                 command=lambda c=cmd: [c(), self.close()]
             )
             btn.pack(fill=tk.X)
         
         # Separator
-        tk.Frame(self.menu_window, bg="#555555", height=1).pack(fill=tk.X, padx=5, pady=5)
+        tk.Frame(self.menu_window, bg=COLORS["border"], height=1).pack(fill=tk.X, padx=5, pady=5)
         
         # Exit button
         exit_btn = tk.Button(
             self.menu_window,
             text="  ⏻  Exit",
-            bg="#2d2d2d",
-            fg="#ffffff",
+            bg=COLORS["bg_titlebar"],
+            fg=COLORS["text_primary"],
             bd=0,
             anchor="w",
             padx=20,
             pady=10,
             font=("Segoe UI", 10),
-            activebackground="#e81123",
+            activebackground=COLORS["danger"],
             command=self.desktop_app.quit
         )
         exit_btn.pack(fill=tk.X)
@@ -365,8 +366,11 @@ class DesktopApp:
         self.root = root
         self.root.title("Mini OS Simulator")
         self.root.geometry("1200x800")
-        self.root.configure(bg="#0078d7")
-        self.root.state("zoomed")  # Maximize on Windows/Linux
+        self.root.configure(bg=COLORS["desktop_bg"])
+        try:
+            self.root.state("zoomed")  # Maximize on Windows/Linux
+        except tk.TclError:
+            self.root.attributes("-zoomed", True)
         
         # Window tracking
         self.windows: Dict[str, Window] = {}
@@ -385,13 +389,13 @@ class DesktopApp:
     
     def _setup_desktop(self):
         """Create the desktop background and canvas."""
-        self.desktop_frame = tk.Frame(self.root, bg="#0078d7")
+        self.desktop_frame = tk.Frame(self.root, bg=COLORS["desktop_bg"])
         self.desktop_frame.pack(fill=tk.BOTH, expand=True)
         
         # Canvas for desktop icons
         self.desktop_canvas = tk.Canvas(
             self.desktop_frame,
-            bg="#0078d7",
+            bg=COLORS["desktop_bg"],
             highlightthickness=0
         )
         self.desktop_canvas.pack(fill=tk.BOTH, expand=True)
@@ -404,13 +408,13 @@ class DesktopApp:
         width = self.root.winfo_screenwidth()
         height = self.root.winfo_screenheight()
         for x in range(0, width, 50):
-            self.desktop_canvas.create_line(x, 0, x, height, fill="#0066b8", width=1)
+            self.desktop_canvas.create_line(x, 0, x, height, fill=COLORS["desktop_grid"], width=1)
         for y in range(0, height, 50):
-            self.desktop_canvas.create_line(0, y, width, y, fill="#0066b8", width=1)
+            self.desktop_canvas.create_line(0, y, width, y, fill=COLORS["desktop_grid"], width=1)
     
     def _setup_taskbar(self):
         """Create the taskbar at the bottom."""
-        self.taskbar = tk.Frame(self.root, bg="#1e1e1e", height=40)
+        self.taskbar = tk.Frame(self.root, bg=COLORS["bg_panel"], height=40)
         self.taskbar.pack(side=tk.BOTTOM, fill=tk.X)
         self.taskbar.pack_propagate(False)
         
@@ -418,8 +422,8 @@ class DesktopApp:
         self.start_button = tk.Button(
             self.taskbar,
             text="⊞  Start",
-            bg="#1e1e1e",
-            fg="#ffffff",
+            bg=COLORS["bg_panel"],
+            fg=COLORS["text_primary"],
             bd=0,
             padx=20,
             pady=5,
@@ -430,19 +434,19 @@ class DesktopApp:
         self.start_button.pack(side=tk.LEFT, padx=5, pady=5)
         
         # Taskbar buttons container
-        self.taskbar_buttons_frame = tk.Frame(self.taskbar, bg="#1e1e1e")
+        self.taskbar_buttons_frame = tk.Frame(self.taskbar, bg=COLORS["bg_panel"])
         self.taskbar_buttons_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
         # System tray (right side)
-        self.system_tray = tk.Frame(self.taskbar, bg="#1e1e1e")
+        self.system_tray = tk.Frame(self.taskbar, bg=COLORS["bg_panel"])
         self.system_tray.pack(side=tk.RIGHT, padx=10)
         
         # Clock
         self.clock_label = tk.Label(
             self.system_tray,
             text="",
-            bg="#1e1e1e",
-            fg="#ffffff",
+            bg=COLORS["bg_panel"],
+            fg=COLORS["text_primary"],
             font=("Segoe UI", 9)
         )
         self.clock_label.pack(side=tk.RIGHT, padx=10)
@@ -555,7 +559,7 @@ class DesktopApp:
                 label = tk.Label(
                     content,
                     text=f"{title} Module\n\nError loading module:\n{e}",
-                    bg="#1e1e1e",
+                    bg=COLORS["bg_panel"],
                     fg="#ff4444",
                     font=("Segoe UI", 12)
                 )
@@ -564,8 +568,8 @@ class DesktopApp:
             label = tk.Label(
                 content,
                 text=f"{title} Module\n\nNot implemented yet",
-                bg="#1e1e1e",
-                fg="#ffffff",
+                bg=COLORS["bg_panel"],
+                fg=COLORS["text_primary"],
                 font=("Segoe UI", 14)
             )
             label.pack(expand=True)

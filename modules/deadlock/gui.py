@@ -10,6 +10,7 @@ matplotlib.use('TkAgg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+from gui.theme import COLORS, FONTS
 from modules.deadlock.algorithms import (
     BankersAlgorithm, BankerState, SafetyResult, RequestResult, generate_sample_state
 )
@@ -126,14 +127,14 @@ class DeadlockWindow:
             (self.need_frame, self.need_labels, False)
         ]:
             # Resource headers
-            ttk.Label(frame, text="P\\R", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, padx=2, pady=2)
+            ttk.Label(frame, text="P\\R", font=FONTS["small"]).grid(row=0, column=0, padx=2, pady=2)
             for j in range(n_res):
-                ttk.Label(frame, text=f"R{j}", font=("Segoe UI", 9, "bold")).grid(row=0, column=j+1, padx=2, pady=2)
+                ttk.Label(frame, text=f"R{j}", font=FONTS["small"]).grid(row=0, column=j+1, padx=2, pady=2)
             
             # Process rows
             row_entries = []
             for i in range(n_proc):
-                ttk.Label(frame, text=f"P{i}", font=("Segoe UI", 9)).grid(row=i+1, column=0, padx=2, pady=2)
+                ttk.Label(frame, text=f"P{i}", font=FONTS["small"]).grid(row=i+1, column=0, padx=2, pady=2)
                 col_entries = []
                 for j in range(n_res):
                     if is_editable:
@@ -144,7 +145,7 @@ class DeadlockWindow:
                         entry.bind("<FocusOut>", lambda e, pi=i, pj=j, f=frame: self._on_matrix_change(pi, pj, f))
                         col_entries.append(entry)
                     else:
-                        label = ttk.Label(frame, text="0", width=6, anchor=tk.CENTER, background="#f0f0f0")
+                        label = ttk.Label(frame, text="0", width=6, anchor=tk.CENTER, background=COLORS["bg_input"])
                         label.grid(row=i+1, column=j+1, padx=2, pady=2)
                         col_entries.append(label)
                 row_entries.append(col_entries)
@@ -273,9 +274,9 @@ class DeadlockWindow:
         
         self.result_text = tk.Text(
             result_frame,
-            bg="#1e1e1e",
-            fg="#ffffff",
-            font=("Consolas", 9),
+            bg=COLORS["bg_panel"],
+            fg=COLORS["text_primary"],
+            font=FONTS["mono_small"],
             wrap=tk.WORD,
             state=tk.DISABLED
         )
@@ -290,12 +291,12 @@ class DeadlockWindow:
         viz_frame = ttk.LabelFrame(parent, text="Resource Allocation Visualization", padding=10)
         viz_frame.pack(fill=tk.X, pady=(10, 0))
         
-        self.fig = Figure(figsize=(6, 3), dpi=100, facecolor='#1e1e1e')
+        self.fig = Figure(figsize=(6, 3), dpi=100, facecolor=COLORS['bg_panel'])
         self.ax = self.fig.add_subplot(111)
-        self.ax.set_facecolor('#1e1e1e')
-        self.ax.tick_params(colors='white')
+        self.ax.set_facecolor(COLORS['bg_panel'])
+        self.ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=viz_frame)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -493,10 +494,10 @@ class DeadlockWindow:
     def _draw_visualization(self, safety_result: SafetyResult = None):
         """Draw resource allocation visualization."""
         self.ax.clear()
-        self.ax.set_facecolor('#1e1e1e')
-        self.ax.tick_params(colors='white')
+        self.ax.set_facecolor(COLORS['bg_panel'])
+        self.ax.tick_params(colors=COLORS['text_secondary'])
         for spine in self.ax.spines.values():
-            spine.set_color('#555555')
+            spine.set_color(COLORS['border'])
         
         if not self.state:
             self.canvas.draw()
@@ -508,7 +509,7 @@ class DeadlockWindow:
         # Create stacked bar chart showing allocation per process
         processes = [f"P{i}" for i in range(n_proc)]
         bottom = [0] * n_proc
-        colors = ['#0078d7', '#e81123', '#00b294', '#ff8c00', '#8764b8', '#e67e22']
+        colors = ['#6c8cff', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#60a5fa', '#34d399', '#fb923c']
         
         for j in range(n_res):
             allocations = [self.state.allocation[i][j] for i in range(n_proc)]
@@ -525,24 +526,24 @@ class DeadlockWindow:
         
         self.ax.set_ylabel('Resource Instances', color='white')
         self.ax.set_title('Resource Allocation per Process\n(Dashed outline = Maximum claim)', color='white')
-        self.ax.legend(loc='upper right', facecolor='#2d2d2d', edgecolor='#555555', labelcolor='white')
+        self.ax.legend(loc='upper right', facecolor=COLORS['bg_card'], edgecolor=COLORS['border'], labelcolor=COLORS['text_primary'])
         
         # Add available as text
         avail_text = "Available: " + ", ".join(f"R{j}={self.state.available[j]}" for j in range(n_res))
         self.ax.text(0.02, 0.98, avail_text, transform=self.ax.transAxes, 
                     color='white', fontsize=9, va='top', ha='left',
-                    bbox=dict(boxstyle='round', facecolor='#2d2d2d', edgecolor='#555555'))
+                    bbox=dict(boxstyle='round', facecolor=COLORS['bg_card'], edgecolor=COLORS['border']))
         
         # If safety result, highlight safe sequence
         if safety_result and safety_result.is_safe:
             seq_text = "Safe Sequence: " + " -> ".join(f"P{i}" for i in safety_result.safe_sequence)
             self.ax.text(0.98, 0.02, seq_text, transform=self.ax.transAxes,
                         color='#00ff00', fontsize=9, va='bottom', ha='right',
-                        bbox=dict(boxstyle='round', facecolor='#2d2d2d', edgecolor='#00ff00'))
+                        bbox=dict(boxstyle='round', facecolor=COLORS['bg_card'], edgecolor='#00ff00'))
         elif safety_result and not safety_result.is_safe:
             self.ax.text(0.98, 0.02, "UNSAFE STATE", transform=self.ax.transAxes,
                         color='#ff4444', fontsize=12, fontweight='bold', va='bottom', ha='right',
-                        bbox=dict(boxstyle='round', facecolor='#2d2d2d', edgecolor='#ff4444'))
+                        bbox=dict(boxstyle='round', facecolor=COLORS['bg_card'], edgecolor=COLORS['danger']))
         
         self.fig.tight_layout()
         self.canvas.draw()
