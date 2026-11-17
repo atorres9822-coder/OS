@@ -904,8 +904,11 @@ class MemoryWindow:
             self.frag_metrics[key].pack(side=tk.LEFT, padx=5)
         
         # Allocation log
-        self.frag_log = tk.Text(frame, height=8, bg=COLORS["bg_panel"], fg=COLORS["text_primary"], font=FONTS["mono_small"])
-        self.frag_log.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
+        log_frame = ttk.Frame(frame)
+        log_frame.grid(row=2, column=0, columnspan=2, sticky=tk.NSEW, pady=(10, 0))
+        frame.rowconfigure(2, weight=1)
+        self.frag_log = tk.Text(log_frame, height=8, bg=COLORS["bg_panel"], fg=COLORS["text_primary"], font=FONTS["mono_small"])
+        self.frag_log.pack(fill=tk.BOTH, expand=True)
     
     def _create_fragmentation_visualization(self, parent):
         """Create fragmentation visualization."""

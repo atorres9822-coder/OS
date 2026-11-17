@@ -125,6 +125,7 @@ class Window:
     def show(self):
         self.frame.deiconify()
         self.frame.lift()
+        self.frame.focus_force()
         self.is_minimized = False
     
     def hide(self):
@@ -237,7 +238,7 @@ class TaskbarButton:
         self.button = tk.Button(
             parent,
             text=window.title,
-            bg="#333333",
+            bg=COLORS["bg_card"],
             fg=COLORS["text_primary"],
             bd=0,
             padx=15,
@@ -251,16 +252,18 @@ class TaskbarButton:
     def _on_click(self):
         if self.window.is_minimized:
             self.window.show()
-        elif self.window.frame and self.window.frame.winfo_viewable():
-            self.window.hide()
-        else:
+        elif not (self.window.frame and self.window.frame.winfo_viewable()):
             self.window.show()
+        else:
+            # Toggle: if visible, bring to front
+            self.window.frame.lift()
+            self.window.frame.focus_force()
     
     def update_state(self):
         if self.window.is_minimized or not (self.window.frame and self.window.frame.winfo_viewable()):
-            self.button.config(bg="#333333")
+            self.button.config(bg=COLORS["bg_card"])
         else:
-            self.button.config(bg=COLORS["desktop_bg"])
+            self.button.config(bg=COLORS["accent"])
     
     def destroy(self):
         self.button.destroy()

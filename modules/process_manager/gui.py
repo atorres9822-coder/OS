@@ -561,8 +561,8 @@ class ProcessManagerWindow:
         for item in self.mp_tree.get_children():
             vals = self.mp_tree.item(item)['values']
             processes.append(SimulatedProcess(
-                pid=vals[0], arrival_time=vals[1], burst_time=vals[2],
-                io_frequency=vals[3], priority=vals[4]
+                pid=str(vals[0]), arrival_time=float(vals[1]), burst_time=float(vals[2]),
+                io_frequency=float(vals[3]), priority=int(vals[4])
             ))
         return processes
     
@@ -769,8 +769,8 @@ class ProcessManagerWindow:
         for item in self.mpc_tree.get_children():
             vals = self.mpc_tree.item(item)['values']
             processes.append(SimulatedProcess(
-                pid=vals[0], arrival_time=vals[1], burst_time=vals[2],
-                io_frequency=vals[3], priority=vals[4]
+                pid=str(vals[0]), arrival_time=float(vals[1]), burst_time=float(vals[2]),
+                io_frequency=float(vals[3]), priority=int(vals[4])
             ))
         return processes
     

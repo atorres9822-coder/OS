@@ -176,7 +176,7 @@ class DiskSchedulingWindow:
                 initial_direction=direction
             )
             
-            messagebox.showinfo("Success", "Configuration applied")
+            pass  # Configuration applied silently
             
         except ValueError as e:
             messagebox.showerror("Error", f"Invalid input: {e}")
