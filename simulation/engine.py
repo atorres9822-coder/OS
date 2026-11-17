@@ -240,6 +240,7 @@ class PlaybackControls:
     def __init__(self, parent: 'tk.Frame', engine: SimulationEngine):
         self.parent = parent
         self.engine = engine
+        self._after_id = None
         self.frame = tk.Frame(parent, bg=COLORS["bg_panel"], height=50)
         self.frame.pack(fill=tk.X, side=tk.BOTTOM, padx=10, pady=5)
         self.frame.pack_propagate(False)
@@ -359,19 +360,28 @@ class PlaybackControls:
     
     def _update_ui(self):
         """Update UI elements based on engine state."""
-        progress = self.engine.get_progress() * 100
-        self.progress_var.set(progress)
-        self.time_label.config(text=f"Time: {self.engine.current_time:.2f}")
+        try:
+            if not self.parent.winfo_exists():
+                return
+        except tk.TclError:
+            return
         
-        # Update button states
-        if self.engine.state == SimulationState.RUNNING:
-            self.btn_play.config(state=tk.DISABLED)
-            self.btn_pause.config(state=tk.NORMAL)
-        else:
-            self.btn_play.config(state=tk.NORMAL)
-            self.btn_pause.config(state=tk.DISABLED)
-        
-        self.parent.after(100, self._update_ui)
+        try:
+            progress = self.engine.get_progress() * 100
+            self.progress_var.set(progress)
+            self.time_label.config(text=f"Time: {self.engine.current_time:.2f}")
+            
+            # Update button states
+            if self.engine.state == SimulationState.RUNNING:
+                self.btn_play.config(state=tk.DISABLED)
+                self.btn_pause.config(state=tk.NORMAL)
+            else:
+                self.btn_play.config(state=tk.NORMAL)
+                self.btn_pause.config(state=tk.DISABLED)
+            
+            self._after_id = self.parent.after(100, self._update_ui)
+        except tk.TclError:
+            pass
 
 
 # Import tkinter at module level for PlaybackControls
