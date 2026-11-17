@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.14
 """
 Mini OS — Interactive Operating System Simulator
 Main entry point for the application.
@@ -18,6 +18,10 @@ def check_dependencies():
         import matplotlib
     except ImportError:
         missing.append("matplotlib")
+    try:
+        from PIL import ImageTk
+    except ImportError:
+        missing.append("Pillow (with tkinter support)")
 
     if missing:
         print("Missing required dependencies:", ", ".join(missing))
@@ -26,11 +30,14 @@ def check_dependencies():
             print("tkinter is required but not installed.")
             print("On Fedora:  sudo dnf install python3-tkinter")
             print("On Ubuntu:  sudo apt install python3-tk")
-            print()
-            print("Alternatively, use the conda Python which includes tkinter:")
-            print("  /home/saint/miniconda3/bin/python main.py")
+        if "Pillow (with tkinter support)" in missing:
+            print("Pillow needs to be rebuilt with tkinter support:")
+            print("  pip install --user --force-reinstall Pillow")
         if "matplotlib" in missing:
             print("Install matplotlib:  pip install matplotlib")
+        print()
+        print("Alternatively, use the conda Python which includes everything:")
+        print("  /home/saint/miniconda3/bin/python main.py")
         sys.exit(1)
 
 

@@ -60,7 +60,7 @@ Mini OS Simulator is a desktop application that simulates core operating system 
 
 Install dependencies:
 ```bash
-pip install matplotlib
+pip install matplotlib Pillow
 ```
 
 On Linux, you may need to install tkinter separately:
@@ -75,8 +75,16 @@ sudo dnf install python3-tkinter
 ## Running the Application
 
 ```bash
-python main.py
+python3.14 main.py
 ```
+
+Or with conda Python (includes all dependencies):
+
+```bash
+/home/saint/miniconda3/bin/python main.py
+```
+
+**Note:** The system `python3` may not have tkinter. Use `python3.14` or conda Python.
 
 ## Project Structure
 
