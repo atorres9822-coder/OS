@@ -254,21 +254,84 @@ class MemoryWindow:
         self._draw_paging_visualization()
     
     def _translate_address(self):
-        """Translate logical address."""
+        """Translate logical address using live page table state."""
         if not hasattr(self, 'paging_config'):
             messagebox.showerror("Error", "Apply configuration first")
             return
-        
+
         addr = self.logical_addr_var.get()
-        phys, valid, explanation = PagingSimulator.translate_address(
-            self.paging_config, addr, self.page_table
-        )
-        
-        self.translation_result.delete(1.0, tk.END)
-        self.translation_result.insert(tk.END, explanation)
-        if not valid:
+        config = self.paging_config
+
+        # Validate address bounds
+        if addr < 0 or addr >= config.logical_memory_size:
+            self.translation_result.delete(1.0, tk.END)
+            self.translation_result.insert(tk.END,
+                f"Logical Address: {addr}\n"
+                f"Error: Address out of bounds.\n"
+                f"Valid range: 0 - {config.logical_memory_size - 1}\n"
+                f"(Logical Memory: {config.logical_memory_size // 1024} KB)"
+            )
             self.translation_result.tag_add("error", "1.0", "end")
             self.translation_result.tag_config("error", foreground="#ff4444")
+            return
+
+        page_size = config.page_size
+        page_num = addr // page_size
+        offset = addr % page_size
+
+        # Read live page table entry
+        if page_num >= len(self.page_table):
+            self.translation_result.delete(1.0, tk.END)
+            self.translation_result.insert(tk.END,
+                f"Logical Address: {addr}\n"
+                f"Error: Page number {page_num} exceeds page table size ({len(self.page_table)})\n"
+            )
+            self.translation_result.tag_add("error", "1.0", "end")
+            self.translation_result.tag_config("error", foreground="#ff4444")
+            return
+
+        entry = self.page_table[page_num]
+
+        # Check valid bit and frame assignment
+        if not entry.valid:
+            self.translation_result.delete(1.0, tk.END)
+            self.translation_result.insert(tk.END,
+                f"Logical Address: {addr}\n"
+                f"  Page Number: {addr} // {page_size} = {page_num}\n"
+                f"  Offset: {addr} % {page_size} = {offset}\n"
+                f"  Page Table[{page_num}]: Frame = -, Valid = ✗\n"
+                f"  Result: Page Fault / Invalid Page\n"
+            )
+            self.translation_result.tag_add("error", "1.0", "end")
+            self.translation_result.tag_config("error", foreground="#ff4444")
+            return
+
+        if entry.frame_number < 0 or entry.frame_number >= config.num_frames:
+            self.translation_result.delete(1.0, tk.END)
+            self.translation_result.insert(tk.END,
+                f"Logical Address: {addr}\n"
+                f"  Page Number: {addr} // {page_size} = {page_num}\n"
+                f"  Offset: {addr} % {page_size} = {offset}\n"
+                f"  Page Table[{page_num}]: Frame = {entry.frame_number}, Valid = ✓\n"
+                f"  Error: Invalid frame number\n"
+                f"  Result: Page Fault / Invalid Page\n"
+            )
+            self.translation_result.tag_add("error", "1.0", "end")
+            self.translation_result.tag_config("error", foreground="#ff4444")
+            return
+
+        # Valid translation
+        physical_address = entry.frame_number * page_size + offset
+        self.translation_result.delete(1.0, tk.END)
+        self.translation_result.insert(tk.END,
+            f"Logical Address: {addr}\n"
+            f"  Page Number: {addr} // {page_size} = {page_num}\n"
+            f"  Offset: {addr} % {page_size} = {offset}\n"
+            f"  Page Table[{page_num}]: Frame = {entry.frame_number}, Valid = ✓\n"
+            f"  Physical Address: {entry.frame_number} * {page_size} + {offset} = {physical_address}\n"
+        )
+        self.translation_result.tag_add("success", "1.0", "end")
+        self.translation_result.tag_config("success", foreground="#00ff00")
     
     def _draw_paging_visualization(self):
         """Draw paging memory map."""
