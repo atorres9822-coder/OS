@@ -288,45 +288,72 @@ class DiskSchedulingWindow:
         r = self.current_result
         config = self.config
         
-        # Draw cylinder axis
-        self.ax.axhline(y=0, color=COLORS['border'], linewidth=1)
+        # Build sequence of (sequence_index, cylinder) points
+        # X-axis = movement sequence, Y-axis = cylinder number
+        sequence_points = [(0, config.initial_head)]  # Start with initial head
+        for i, (from_cyl, to_cyl, dist) in enumerate(r.execution_path):
+            sequence_points.append((i + 1, to_cyl))
         
-        # Mark cylinders
+        seq_indices = [p[0] for p in sequence_points]
+        cylinders = [p[1] for p in sequence_points]
+        
         min_cyl, max_cyl = config.cylinder_range
         
-        # Draw requests as markers
-        for req in config.requests:
-            self.ax.plot(req, 0, 'ro', markersize=10, markerfacecolor=COLORS['danger'], markeredgecolor='white')
-            self.ax.text(req, 0.15, str(req), ha='center', va='bottom', color='white', fontsize=8)
+        # Plot the movement path as a line (shows zigzag for direction changes)
+        self.ax.plot(seq_indices, cylinders, color=COLORS['accent'], linewidth=2.5,
+                     marker='o', markersize=8, markerfacecolor=COLORS['success'],
+                     markeredgecolor='white', markeredgewidth=1.5, label='Head Movement Path')
         
-        # Draw initial head
-        self.ax.plot(config.initial_head, 0, 'go', markersize=12, markerfacecolor=COLORS['success'], markeredgecolor='white')
-        self.ax.text(config.initial_head, -0.15, f"START\n{config.initial_head}", ha='center', va='top', color=COLORS['success'], fontsize=8, fontweight='bold')
+        # Mark initial head position
+        self.ax.plot(0, config.initial_head, 's', markersize=14,
+                     markerfacecolor=COLORS['success'], markeredgecolor='white',
+                     markeredgewidth=2, label='Initial Head')
+        self.ax.annotate(f'START\n{config.initial_head}', (0, config.initial_head),
+                        xytext=(-0.4, config.initial_head + (max_cyl - min_cyl) * 0.08),
+                        fontsize=9, fontweight='bold', color=COLORS['success'],
+                        ha='right', va='bottom',
+                        bbox=dict(boxstyle='round,pad=0.3', facecolor=COLORS['bg_card'],
+                                 edgecolor=COLORS['success'], alpha=0.9))
         
-        # Draw movement path
-        if r.execution_path:
-            path_points = [config.initial_head] + [to for _, to, _ in r.execution_path]
-            
-            for i, (from_cyl, to_cyl, dist) in enumerate(r.execution_path):
-                y = 0.3 + (i % 3) * 0.15  # Stagger lines
-                self.ax.annotate('',
-                    xy=(to_cyl, y), xytext=(from_cyl, y),
-                    arrowprops=dict(arrowstyle='->', color=COLORS['accent'], lw=2))
-                # Distance label
-                mid = (from_cyl + to_cyl) / 2
-                self.ax.text(mid, y + 0.02, str(dist), ha='center', va='bottom', color=COLORS['accent'], fontsize=8)
+        # Mark each service point with cylinder label
+        for i, (seq, cyl) in enumerate(sequence_points[1:], start=1):
+            self.ax.plot(seq, cyl, 'o', markersize=10,
+                         markerfacecolor=COLORS['danger'], markeredgecolor='white',
+                         markeredgewidth=1.5)
+            # Label with cylinder number
+            self.ax.annotate(str(cyl), (seq, cyl),
+                            xytext=(0, 12), textcoords='offset points',
+                            fontsize=9, fontweight='bold', color='white',
+                            ha='center', va='bottom',
+                            bbox=dict(boxstyle='round,pad=0.25', facecolor=COLORS['danger'],
+                                     alpha=0.8))
         
-        self.ax.set_xlim(min_cyl - 10, max_cyl + 10)
-        self.ax.set_ylim(-0.5, 1.0)
-        self.ax.set_xlabel('Cylinder Number', color='white')
-        self.ax.set_title(f'Disk Head Movement - {r.algorithm.value.upper()}', color='white')
-        self.ax.set_yticks([])
+        # Mark all request positions as reference on Y-axis
+        for req in sorted(set(config.requests)):
+            self.ax.axhline(y=req, color=COLORS['border'], linewidth=0.5, alpha=0.3, zorder=0)
+        
+        # Configure axes
+        self.ax.set_xlim(-0.5, len(sequence_points) - 0.5)
+        y_margin = (max_cyl - min_cyl) * 0.1
+        self.ax.set_ylim(min_cyl - y_margin, max_cyl + y_margin)
+        
+        # X-axis: sequence steps
+        x_labels = ['Start'] + [f'S{i}' for i in range(1, len(sequence_points))]
+        self.ax.set_xticks(seq_indices)
+        self.ax.set_xticklabels(x_labels, rotation=45, ha='right')
+        
+        self.ax.set_xlabel('Service Sequence', color='white', fontsize=11)
+        self.ax.set_ylabel('Cylinder Number', color='white', fontsize=11)
+        self.ax.set_title(f'Disk Head Movement - {r.algorithm.value.upper()}',
+                         color='white', fontsize=12, fontweight='bold', pad=15)
+        
+        # Grid for readability
+        self.ax.grid(True, alpha=0.3, linestyle='--', axis='y')
         
         # Legend
-        self.ax.plot([], [], 'go', markersize=10, label='Initial Head', color=COLORS['success'])
-        self.ax.plot([], [], 'ro', markersize=10, label='Requests', color=COLORS['danger'])
-        self.ax.plot([], [], '-', color=COLORS['accent'], label='Head Movement')
-        self.ax.legend(loc='upper right', facecolor=COLORS['bg_card'], edgecolor=COLORS['border'], labelcolor=COLORS['text_primary'])
+        self.ax.legend(loc='upper left', facecolor=COLORS['bg_card'],
+                      edgecolor=COLORS['border'], labelcolor=COLORS['text_primary'],
+                      fontsize=9)
         
         self.fig.tight_layout()
         self.canvas.draw()
