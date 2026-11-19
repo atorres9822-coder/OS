@@ -34,8 +34,6 @@ class SchedulingAlgorithm(Enum):
     FCFS = "fcfs"
     SJF = "sjf"
     SRTF = "srtf"
-    PRIORITY_NP = "priority_np"   # Non-preemptive priority
-    PRIORITY_P = "priority_p"     # Preemptive priority
     ROUND_ROBIN = "round_robin"
 
 
@@ -169,15 +167,9 @@ class ProcessManager:
             elif algorithm == SchedulingAlgorithm.SJF:
                 # Shortest burst time first
                 return min(queue, key=lambda p: (p.burst_time, p.arrival_time, p.pid))
-            elif algorithm == SchedulingAlgorithm.PRIORITY_NP:
-                # Highest priority first (lower number = higher priority)
-                return min(queue, key=lambda p: (p.priority, p.arrival_time, p.pid))
             elif algorithm == SchedulingAlgorithm.SRTF:
                 # Shortest remaining time first
                 return min(queue, key=lambda p: (p.remaining_time, p.arrival_time, p.pid))
-            elif algorithm == SchedulingAlgorithm.PRIORITY_P:
-                # Highest priority first (preemptive)
-                return min(queue, key=lambda p: (p.priority, p.arrival_time, p.pid))
             elif algorithm == SchedulingAlgorithm.ROUND_ROBIN:
                 # FIFO order
                 return queue[0]
@@ -194,8 +186,6 @@ class ProcessManager:
             """Check if a candidate process should preempt the running process."""
             if algorithm == SchedulingAlgorithm.SRTF:
                 return candidate.remaining_time < running.remaining_time
-            elif algorithm == SchedulingAlgorithm.PRIORITY_P:
-                return candidate.priority < running.priority
             return False
 
         while len(completed) < n_procs and current_time < max_time:
@@ -218,7 +208,7 @@ class ProcessManager:
             max_in_memory = max(max_in_memory, in_memory)
 
             # 4. Check for preemption (preemptive algorithms only)
-            if running_proc is not None and algorithm in (SchedulingAlgorithm.SRTF, SchedulingAlgorithm.PRIORITY_P):
+            if running_proc is not None and algorithm == SchedulingAlgorithm.SRTF:
                 candidate = select_from_ready(ready_queue)
                 if candidate is not None and should_preempt(running_proc, candidate):
                     # Preempt running process
@@ -228,8 +218,6 @@ class ProcessManager:
                     # Re-sort ready queue for preemptive algorithms
                     if algorithm == SchedulingAlgorithm.SRTF:
                         ready_queue.sort(key=lambda p: (p.remaining_time, p.arrival_time, p.pid))
-                    elif algorithm == SchedulingAlgorithm.PRIORITY_P:
-                        ready_queue.sort(key=lambda p: (p.priority, p.arrival_time, p.pid))
 
                     # Context switch: different PID
                     if last_pid is not None and last_pid != candidate.pid:
@@ -296,38 +284,30 @@ class ProcessManager:
                 continue
 
             # 7. Determine run duration
+            run_time = running_proc.remaining_time
             if algorithm == SchedulingAlgorithm.ROUND_ROBIN:
-                run_time = min(time_slice, running_proc.remaining_time)
-            else:
-                # Non-RR algorithms: run until completion, preemption, or I/O
-                run_time = running_proc.remaining_time
+                run_time = min(run_time, time_slice)
 
-            # Cap run_time at next arrival (if an arrival happens before time slice ends)
+            # Cap at next arrival
             if process_idx < n_procs:
                 time_to_next_arrival = procs[process_idx].arrival_time - current_time
                 if time_to_next_arrival > 0:
                     run_time = min(run_time, time_to_next_arrival)
 
-            # Cap run_time at next I/O completion
+            # Cap at next I/O completion event
             if io_events:
                 time_to_next_io = io_events[0][0] - current_time
                 if time_to_next_io > 0:
                     run_time = min(run_time, time_to_next_io)
 
-            # 8. Check if I/O should occur during this run
+            # Cap at I/O frequency trigger (this process's next I/O request)
             if running_proc.io_frequency > 0:
-                if running_proc.cpu_since_io + run_time >= running_proc.io_frequency:
-                    # I/O will trigger during this run
-                    cpu_before_io = running_proc.io_frequency - running_proc.cpu_since_io
-                    if cpu_before_io > 0:
-                        run_time = cpu_before_io
-                    else:
-                        # I/O triggers immediately (edge case)
-                        run_time = 0.001
+                cpu_before_io = running_proc.io_frequency - running_proc.cpu_since_io
+                if cpu_before_io > 0:
+                    run_time = min(run_time, cpu_before_io)
 
-            # 9. Execute the run
+            # 8. Execute the run
             if run_time <= 0:
-                # Safety: advance minimally
                 current_time += 0.001
                 continue
 
@@ -336,7 +316,7 @@ class ProcessManager:
             running_proc.cpu_time_used += run_time
             running_proc.cpu_since_io += run_time
 
-            # 10. Check process completion
+            # 9. Check process completion
             if running_proc.remaining_time <= 0.001:
                 running_proc.completion_time = current_time
                 running_proc.turnaround_time = current_time - running_proc.arrival_time
@@ -353,15 +333,14 @@ class ProcessManager:
                 ))
 
                 completed.append(running_proc)
-                # Context switch: process ends (different PID or idle next)
                 if last_pid is not None and last_pid != running_proc.pid:
                     context_switches += 1
                 last_pid = None
                 running_proc = None
                 continue
 
-            # 11. Check I/O trigger
-            if running_proc.io_frequency > 0 and running_proc.cpu_since_io >= running_proc.io_frequency:
+            # 10. Check I/O trigger (only if we ran up to the I/O boundary)
+            if running_proc.io_frequency > 0 and running_proc.cpu_since_io >= running_proc.io_frequency - 0.001:
                 running_proc.cpu_since_io = 0.0
                 io_time = random.uniform(0.5, 3.0)
                 io_completion = current_time + io_time
@@ -379,14 +358,13 @@ class ProcessManager:
                 ))
 
                 io_events.append((io_completion, running_proc))
-                # Context switch: process goes to I/O
                 if last_pid is not None and last_pid != running_proc.pid:
                     context_switches += 1
                 last_pid = None
                 running_proc = None
                 continue
 
-            # 12. Check time slice expiration (RR only)
+            # 11. Check time slice expiration (RR only)
             if algorithm == SchedulingAlgorithm.ROUND_ROBIN and run_time >= time_slice - 0.001:
                 # If no other processes are waiting, same process continues
                 # without any context switch or redundant preempt/start events

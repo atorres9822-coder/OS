@@ -389,16 +389,20 @@ class ProcessManagerWindow:
         colors = ['#6c8cff', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#60a5fa']
         color_map = {p: colors[i % len(colors)] for i, p in enumerate(procs)}
         
-        # Draw each interval as a bar
+        # Draw each interval as a bar, grouped by PID on Y-axis
+        # Each process gets exactly one horizontal row
         y_positions = []
         y_labels = []
         y = 0.5
-        for pid, start, end in merged:
-            self.mp_ax.barh(y, end - start, left=start, height=0.6,
-                           color=color_map[pid], edgecolor='white', linewidth=0.5)
-            if end - start > 0.5:
-                self.mp_ax.text(start + (end - start) / 2, y, pid, ha='center', va='center',
-                               color='white', fontsize=8, fontweight='bold')
+        for pid in procs:
+            # Collect all intervals for this process
+            proc_intervals = [(s, e) for p, s, e in merged if p == pid]
+            for start, end in proc_intervals:
+                self.mp_ax.barh(y, end - start, left=start, height=0.6,
+                               color=color_map[pid], edgecolor='white', linewidth=0.5)
+                if end - start > 0.5:
+                    self.mp_ax.text(start + (end - start) / 2, y, pid, ha='center', va='center',
+                                   color='white', fontsize=8, fontweight='bold')
             y_positions.append(y)
             y_labels.append(pid)
             y += 1
@@ -406,7 +410,7 @@ class ProcessManagerWindow:
         self.mp_ax.set_ylim(0, len(merged) + 0.5)
         self.mp_ax.set_yticks(y_positions)
         self.mp_ax.set_yticklabels(y_labels, color='white')
-        self.mp_ax.set_xlim(0, max(r.total_time, 1) * 1.05)
+        self.mp_ax.set_xlim(0, max(r.total_time, 1))
         self.mp_ax.set_xlabel('Time', color='white')
         self.mp_ax.set_title(f'CPU Timeline - {r.algorithm.replace("_", " ").title()}', color='white')
         
