@@ -222,30 +222,30 @@ class DesktopIcon:
         self._bind_events()
     
     def _draw(self):
-        # Subtle dark background for icon area (transparent enough to see wallpaper)
+        # Use module color for icon background so each shortcut is distinct
         self.icon_id = self.canvas.create_rectangle(
             self.x, self.y, 
             self.x + 74, self.y + 74,
-            fill="#1a1a1a", outline=COLORS["border"], width=1,
-            tags="icon", stipple="gray50"
+            fill=self.icon_color, outline=COLORS["border"], width=2,
+            tags="icon"
         )
         
-        # Icon symbol (larger, centered in the icon area)
+        # Icon symbol (centered in the icon area)
         symbol = self.SYMBOLS.get(self.text, "⊛")
         self.symbol_id = self.canvas.create_text(
             self.x + 37, self.y + 36,
             text=symbol,
             fill="#ffffff",
-            font=("Segoe UI Emoji", 22),
+            font=("Segoe UI Emoji", 20),
             tags="icon_symbol"
         )
         
         # Icon text label (beneath the icon)
         self.text_id = self.canvas.create_text(
-            self.x + 37, self.y + 93,
+            self.x + 37, self.y + 95,
             text=self.text,
             fill="#ffffff",
-            font=("Segoe UI", 10, "bold"),
+            font=("Segoe UI", 9, "bold"),
             width=74,
             justify=tk.CENTER,
             tags="icon_text"
@@ -283,20 +283,18 @@ class DesktopIcon:
     
     def _update_appearance(self):
         """Update icon appearance based on hover and selection state."""
+        base_color = self.icon_color
         if self.is_selected:
             outline = COLORS["accent"]
-            width = 2
-            fill = "#2a2a2a"
+            width = 3
         elif self.is_hovered:
             outline = COLORS["border_light"]
-            width = 2
-            fill = "#2a2a2a"
+            width = 3
         else:
             outline = COLORS["border"]
-            width = 1
-            fill = "#1a1a1a"
+            width = 2
         
-        self.canvas.itemconfig(self.icon_id, outline=outline, width=width, fill=fill)
+        self.canvas.itemconfig(self.icon_id, outline=outline, width=width, fill=base_color)
     
     def set_selected(self, selected: bool):
         self.is_selected = selected
