@@ -430,7 +430,7 @@ class CPUSchedulingWindow:
         for item in self.result_tree.get_children():
             self.result_tree.delete(item)
         
-        for p in r.processes:
+        for p in sorted(r.processes, key=lambda p: p.pid):
             self.result_tree.insert("", tk.END, values=(
                 p.pid, p.arrival_time, p.burst_time,
                 f"{p.completion_time:.2f}", f"{p.turnaround_time:.2f}",

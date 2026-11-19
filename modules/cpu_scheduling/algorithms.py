@@ -240,8 +240,8 @@ class CPUScheduler:
         current_time = 0.0
         context_switches = 0
         completed = []
-        prev_pid = None
         current_proc = None
+        prev_pid = None
         
         while len(completed) < len(procs):
             # Find arrived processes
@@ -259,9 +259,8 @@ class CPUScheduler:
             arrived.sort(key=lambda x: (x.remaining_time, x.arrival_time, x.pid))
             next_proc = arrived[0]
             
-            # Check for preemption
-            if current_proc and current_proc != next_proc:
-                # Preempt current process
+            # Context switch: different running process
+            if prev_pid is not None and prev_pid != next_proc.pid:
                 context_switches += 1
             
             if current_proc != next_proc:
@@ -270,6 +269,7 @@ class CPUScheduler:
                     if gantt and gantt[-1].pid == current_proc.pid and not gantt[-1].is_idle:
                         gantt[-1].end_time = current_time
                 current_proc = next_proc
+                prev_pid = next_proc.pid  # Track PID for context switch counting
             
             # Execute for 1 time unit (or until next arrival/completion)
             next_event_time = float('inf')
@@ -300,6 +300,7 @@ class CPUScheduler:
                 if current_proc.start_time < 0:
                     current_proc.start_time = current_proc.completion_time - current_proc.burst_time
                 completed.append(current_proc)
+                prev_pid = current_proc.pid  # Save PID before clearing
                 current_proc = None
         
         CPUScheduler._calculate_metrics(completed)
@@ -379,6 +380,7 @@ class CPUScheduler:
         context_switches = 0
         completed = []
         current_proc = None
+        prev_pid = None
         
         while len(completed) < len(procs):
             arrived = [p for p in procs if p.arrival_time <= current_time and p not in completed]
@@ -394,7 +396,8 @@ class CPUScheduler:
             arrived.sort(key=lambda x: (x.priority, x.arrival_time, x.pid))
             next_proc = arrived[0]
             
-            if current_proc and current_proc != next_proc:
+            # Context switch: different running process
+            if prev_pid is not None and prev_pid != next_proc.pid:
                 context_switches += 1
             
             if current_proc != next_proc:
@@ -402,6 +405,7 @@ class CPUScheduler:
                     if gantt and gantt[-1].pid == current_proc.pid and not gantt[-1].is_idle:
                         gantt[-1].end_time = current_time
                 current_proc = next_proc
+                prev_pid = next_proc.pid  # Track PID for context switch counting
             
             # Next event: arrival of higher priority process or completion
             next_event_time = float('inf')
@@ -427,6 +431,7 @@ class CPUScheduler:
                 if current_proc.start_time < 0:
                     current_proc.start_time = current_proc.completion_time - current_proc.burst_time
                 completed.append(current_proc)
+                prev_pid = current_proc.pid  # Save PID before clearing
                 current_proc = None
         
         CPUScheduler._calculate_metrics(completed)
