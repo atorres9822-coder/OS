@@ -7,6 +7,13 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Dict, List, Optional, Callable
 import uuid
+import os
+import glob
+try:
+    from PIL import Image, ImageTk
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
 from gui.theme import COLORS, FONTS, MODULE_COLORS, apply_ttk_style
 
 # Import module factories
@@ -215,31 +222,31 @@ class DesktopIcon:
         self._bind_events()
     
     def _draw(self):
-        # Icon background rectangle (the "icon" area)
+        # Subtle dark background for icon area (transparent enough to see wallpaper)
         self.icon_id = self.canvas.create_rectangle(
             self.x, self.y, 
-            self.x + 80, self.y + 80,
-            fill=self.icon_color, outline=COLORS["border"], width=2,
-            tags="icon"
+            self.x + 70, self.y + 70,
+            fill="#1a1a1a", outline=COLORS["border"], width=1,
+            tags="icon", stipple="gray50"
         )
         
         # Icon symbol (larger, centered in the icon area)
         symbol = self.SYMBOLS.get(self.text, self.text[:3].upper())
         self.symbol_id = self.canvas.create_text(
-            self.x + 40, self.y + 40,
+            self.x + 35, self.y + 33,
             text=symbol,
             fill="#ffffff",
-            font=("Segoe UI", 16, "bold"),
+            font=("Segoe UI", 14, "bold"),
             tags="icon_symbol"
         )
         
         # Icon text label (beneath the icon)
         self.text_id = self.canvas.create_text(
-            self.x + 40, self.y + 98,
+            self.x + 35, self.y + 86,
             text=self.text,
-            fill=COLORS["text_primary"],
-            font=FONTS["small"],
-            width=80,
+            fill="#ffffff",
+            font=("Segoe UI", 9, "bold"),
+            width=70,
             justify=tk.CENTER,
             tags="icon_text"
         )
@@ -278,27 +285,25 @@ class DesktopIcon:
         """Update icon appearance based on hover and selection state."""
         if self.is_selected:
             outline = COLORS["accent"]
-            width = 3
+            width = 2
+            fill = "#2a2a2a"
         elif self.is_hovered:
             outline = COLORS["border_light"]
             width = 2
+            fill = "#2a2a2a"
         else:
             outline = COLORS["border"]
-            width = 2
+            width = 1
+            fill = "#1a1a1a"
         
-        self.canvas.itemconfig(self.icon_id, outline=outline, width=width)
-        
-        # Slightly brighten the icon color on hover
-        if self.is_hovered and not self.is_selected:
-            # Lighten the icon color for hover
-            self.canvas.itemconfig(self.icon_id, fill=self.icon_color)
+        self.canvas.itemconfig(self.icon_id, outline=outline, width=width, fill=fill)
     
     def set_selected(self, selected: bool):
         self.is_selected = selected
         self._update_appearance()
     
     def get_bounds(self):
-        return (self.x, self.y, self.x + 80, self.y + 115)
+        return (self.x, self.y, self.x + 70, self.y + 100)
 
 
 class TaskbarButton:
@@ -449,6 +454,9 @@ class DesktopApp:
         self.windows: Dict[str, Window] = {}
         self.taskbar_buttons: Dict[str, TaskbarButton] = {}
         self.next_icon_position = [20, 20]
+        self.desktop_icons: List[DesktopIcon] = []
+        self.wallpaper_image = None
+        self.wallpaper_photo = None
         
         # Setup UI
         self._setup_desktop()
@@ -465,7 +473,7 @@ class DesktopApp:
         self.desktop_frame = tk.Frame(self.root, bg=COLORS["desktop_bg"])
         self.desktop_frame.pack(fill=tk.BOTH, expand=True)
         
-        # Canvas for desktop icons
+        # Canvas for desktop icons and wallpaper
         self.desktop_canvas = tk.Canvas(
             self.desktop_frame,
             bg=COLORS["desktop_bg"],
@@ -473,7 +481,10 @@ class DesktopApp:
         )
         self.desktop_canvas.pack(fill=tk.BOTH, expand=True)
         
-        # Draw a subtle grid pattern
+        # Load and draw wallpaper
+        self._load_wallpaper()
+        
+        # Draw a subtle grid overlay on top of wallpaper
         self._draw_background()
     
     def _draw_background(self):
@@ -490,6 +501,76 @@ class DesktopApp:
         screen_w = self.root.winfo_screenwidth()
         screen_h = self.root.winfo_screenheight()
         self.root.geometry(f"{screen_w}x{screen_h}+0+0")
+
+    def _find_wallpaper(self):
+        """Auto-detect a JPG/PNG wallpaper in the project root directory."""
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        for ext in ("*.jpg", "*.jpeg", "*.png"):
+            matches = glob.glob(os.path.join(project_root, ext))
+            if matches:
+                return matches[0]
+        return None
+
+    def _load_wallpaper(self):
+        """Load the desktop wallpaper image if PIL is available."""
+        if not PIL_AVAILABLE:
+            return
+        wallpaper_path = self._find_wallpaper()
+        if not wallpaper_path:
+            return
+        try:
+            self.wallpaper_image = Image.open(wallpaper_path)
+            self._draw_wallpaper()
+        except Exception:
+            self.wallpaper_image = None
+
+    def _draw_wallpaper(self):
+        """Draw the wallpaper covering the canvas with aspect-aware crop."""
+        if not self.wallpaper_image or not self.desktop_canvas.winfo_exists():
+            return
+
+        canvas_w = self.desktop_canvas.winfo_width()
+        canvas_h = self.desktop_canvas.winfo_height()
+        if canvas_w <= 1 or canvas_h <= 1:
+            # Canvas not yet laid out; retry shortly
+            self.root.after(50, self._draw_wallpaper)
+            return
+
+        # Calculate crop box to cover canvas while maintaining aspect ratio
+        img_w, img_h = self.wallpaper_image.size
+        canvas_ratio = canvas_w / canvas_h
+        img_ratio = img_w / img_h
+
+        if img_ratio > canvas_ratio:
+            # Image is wider than canvas: crop left/right
+            new_w = int(img_h * canvas_ratio)
+            x = (img_w - new_w) // 2
+            crop_box = (x, 0, x + new_w, img_h)
+        else:
+            # Image is taller than canvas: crop top/bottom
+            new_h = int(img_w / canvas_ratio)
+            y = (img_h - new_h) // 2
+            crop_box = (0, y, img_w, y + new_h)
+
+        cropped = self.wallpaper_image.crop(crop_box)
+        resized = cropped.resize((canvas_w, canvas_h), Image.LANCZOS)
+        self.wallpaper_photo = ImageTk.PhotoImage(resized)
+
+        # Remove old wallpaper and draw new one as bottom layer
+        self.desktop_canvas.delete("wallpaper")
+        self.desktop_canvas.create_image(
+            0, 0, image=self.wallpaper_photo, anchor=tk.NW, tags="wallpaper"
+        )
+        self.desktop_canvas.tag_lower("wallpaper")
+
+    def _draw_background(self):
+        """Draw a subtle grid overlay on top of the wallpaper."""
+        width = self.root.winfo_screenwidth()
+        height = self.root.winfo_screenheight()
+        for x in range(0, width, 60):
+            self.desktop_canvas.create_line(x, 0, x, height, fill=COLORS["desktop_grid"], width=1)
+        for y in range(0, height, 60):
+            self.desktop_canvas.create_line(0, y, width, y, fill=COLORS["desktop_grid"], width=1)
     
     def _setup_taskbar(self):
         """Create the taskbar at the bottom."""
@@ -546,11 +627,7 @@ class DesktopApp:
         self.start_menu.toggle(x, y)
     
     def _create_desktop_icons(self):
-        """Create desktop icons for each simulation module.
-
-        Icons are arranged in a centered grid that uses available screen space
-        effectively, positioned in the upper portion of the desktop.
-        """
+        """Create desktop icons arranged vertically along the left side."""
         modules = [
             ("CPU Scheduler", "cpu_scheduler", lambda: self.open_module("cpu_scheduler")),
             ("Deadlock Manager", "deadlock", lambda: self.open_module("deadlock")),
@@ -560,32 +637,18 @@ class DesktopApp:
             ("System Monitor", "system_monitor", lambda: self.open_module("system_monitor")),
         ]
 
-        # Icon dimensions
-        icon_w = 80
-        icon_h = 115  # includes text below icon
-        h_gap = 70
-        v_gap = 90
-        cols = 3
-        rows = (len(modules) + cols - 1) // cols
-
-        grid_w = cols * icon_w + (cols - 1) * h_gap
-        grid_h = rows * icon_h + (rows - 1) * v_gap
-
-        screen_w = self.root.winfo_screenwidth()
-        screen_h = self.root.winfo_screenheight()
-
-        # Center horizontally, start at ~15% from top
-        start_x = max(20, (screen_w - grid_w) // 2)
-        start_y = int(screen_h * 0.12)
+        # Vertical column on left side of desktop
+        icon_w = 70
+        icon_h = 100  # includes text below icon
+        v_gap = 25  # vertical gap between shortcuts
+        x = 20  # left margin
+        y = 60  # start from top area
 
         self.desktop_icons = []
         for idx, (name, module_key, cmd) in enumerate(modules):
-            row = idx // cols
-            col = idx % cols
-            x = start_x + col * (icon_w + h_gap)
-            y = start_y + row * (icon_h + v_gap)
+            y_pos = y + idx * (icon_h + v_gap)
             color = MODULE_COLORS.get(module_key, COLORS["accent"])
-            icon = DesktopIcon(self.desktop_canvas, x, y, name, color, cmd, self)
+            icon = DesktopIcon(self.desktop_canvas, x, y_pos, name, color, cmd, self)
             self.desktop_icons.append(icon)
     
     def _on_desktop_click(self, event):
@@ -597,6 +660,7 @@ class DesktopApp:
         """Handle window resize."""
         if event.widget == self.root:
             self.desktop_canvas.delete("background")
+            self._draw_wallpaper()
             self._draw_background()
     
     def select_icon(self, icon: DesktopIcon):
