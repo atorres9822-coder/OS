@@ -134,13 +134,13 @@ class CPUSchedulingWindow:
         self.quantum_frame = ttk.Frame(algo_frame)
         self.quantum_frame.grid(row=3, column=0, columnspan=2, sticky=tk.W, pady=5)
         ttk.Label(self.quantum_frame, text="Time Quantum:").pack(side=tk.LEFT, padx=10)
-        self.quantum_var = tk.DoubleVar(value=2.0)
+        self.quantum_var = tk.IntVar(value=2)
         self.quantum_spin = ttk.Spinbox(
-            self.quantum_frame, from_=0.1, to=10.0, increment=0.1,
+            self.quantum_frame, from_=1, to=1000, increment=1,
             textvariable=self.quantum_var, width=8
         )
         self.quantum_spin.pack(side=tk.LEFT, padx=5)
-        self.quantum_frame.pack_forget()  # Hide initially
+        self.quantum_frame.grid_remove()  # Hide initially
         
         # Run button
         ttk.Button(parent, text="Run Simulation", command=self._run_simulation).pack(fill=tk.X, pady=5)
@@ -230,9 +230,9 @@ class CPUSchedulingWindow:
         """Handle algorithm selection change."""
         algo = AlgorithmType(self.algorithm_var.get())
         if algo == AlgorithmType.ROUND_ROBIN:
-            self.quantum_frame.pack(fill=tk.X, pady=5)
+            self.quantum_frame.grid()
         else:
-            self.quantum_frame.pack_forget()
+            self.quantum_frame.grid_remove()
     
     def _add_process(self):
         """Add a new process."""
@@ -374,18 +374,42 @@ class CPUSchedulingWindow:
     def _run_simulation(self):
         """Run the selected scheduling algorithm."""
         if not self.processes:
-            messagebox.showerror("Error", "No processes defined")
+            messagebox.showerror("Error", "No processes defined. Add at least one process before running.")
             return
         
         algo = AlgorithmType(self.algorithm_var.get())
-        quantum = self.quantum_var.get() if algo == AlgorithmType.ROUND_ROBIN else 2.0
+        
+        # Pre-validate all processes with specific error messages
+        validation_errors = CPUScheduler.validate_processes(self.processes)
+        if validation_errors:
+            error_msg = "Validation errors:\n" + "\n".join(f"• {e}" for e in validation_errors)
+            messagebox.showerror("Input Validation Failed", error_msg)
+            return
+        
+        # Validate time quantum for Round Robin
+        quantum = 2
+        if algo == AlgorithmType.ROUND_ROBIN:
+            try:
+                quantum = self.quantum_var.get()
+                if quantum <= 0:
+                    messagebox.showerror(
+                        "Input Validation Failed",
+                        "Time Quantum must be a positive integer greater than zero."
+                    )
+                    return
+            except tk.TclError:
+                messagebox.showerror(
+                    "Input Validation Failed",
+                    "Time Quantum must be a valid positive integer."
+                )
+                return
         
         try:
             self.current_result = CPUScheduler.run_algorithm(algo, self.processes, quantum)
             self._display_results()
             self._setup_playback()
         except ValueError as e:
-            messagebox.showerror("Error", str(e))
+            messagebox.showerror("Simulation Error", str(e))
     
     def _display_results(self):
         """Display simulation results."""
