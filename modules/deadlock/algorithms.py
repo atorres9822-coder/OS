@@ -150,7 +150,10 @@ class BankersAlgorithm:
                         explanation.append(f"Process P{i}: Need = {need_i} <= Work = {work} ✗")
             
             if not found:
-                explanation.append("No process found that can complete with current Work.")
+                if all(finish):
+                    explanation.append("All processes can finish safely.")
+                else:
+                    explanation.append("No process found that can complete with current Work.")
                 break
         
         is_safe = all(finish)
@@ -227,7 +230,7 @@ class BankersAlgorithm:
         explanation.append(f"  Available = {state.available}")
         
         if any(request[j] > state.available[j] for j in range(state.num_resources)):
-            explanation.append("  Result: Request exceeds Available - Process must wait")
+            explanation.append("  Result: Insufficient resources currently available - Process must wait")
             return RequestResult(
                 granted=False,
                 new_state=None,
