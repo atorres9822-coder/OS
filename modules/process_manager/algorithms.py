@@ -388,22 +388,35 @@ class ProcessManager:
 
             # 12. Check time slice expiration (RR only)
             if algorithm == SchedulingAlgorithm.ROUND_ROBIN and run_time >= time_slice - 0.001:
-                running_proc.record_state_change(current_time, ProcessState.READY, TransitionReason.TIMEOUT.value)
-                ready_queue.append(running_proc)
+                # If no other processes are waiting, same process continues
+                # without any context switch or redundant preempt/start events
+                if len(ready_queue) == 0:
+                    running_proc.record_state_change(current_time, ProcessState.RUNNING, TransitionReason.SCHEDULED.value)
+                    schedule.append(CPUScheduleEvent(
+                        time=current_time,
+                        event_type="start",
+                        process_id=running_proc.pid,
+                        core_id=0,
+                        details=f"Continued after time slice ({time_slice})"
+                    ))
+                    # running_proc continues, no context switch, no last_pid change
+                else:
+                    # Other processes waiting - preempt current process
+                    running_proc.record_state_change(current_time, ProcessState.READY, TransitionReason.TIMEOUT.value)
+                    ready_queue.append(running_proc)
 
-                # Context switch: only if different PID will run next
-                # (don't count if same process gets re-dispatched with no other process)
-                # We don't update last_pid here - it will be set when next process dispatched
+                    if last_pid is not None and last_pid != running_proc.pid:
+                        context_switches += 1
 
-                schedule.append(CPUScheduleEvent(
-                    time=current_time,
-                    event_type="preempt",
-                    process_id=running_proc.pid,
-                    core_id=0,
-                    details=f"Time slice expired ({time_slice})"
-                ))
+                    schedule.append(CPUScheduleEvent(
+                        time=current_time,
+                        event_type="preempt",
+                        process_id=running_proc.pid,
+                        core_id=0,
+                        details=f"Time slice expired ({time_slice})"
+                    ))
 
-                running_proc = None
+                    running_proc = None
 
         # Calculate metrics
         total_time = current_time

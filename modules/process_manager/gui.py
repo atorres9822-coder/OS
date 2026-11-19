@@ -304,8 +304,10 @@ class ProcessManagerWindow:
         """Stop simulation."""
         self._mp_pause()
         self.playback_time = 0.0
-        self.mp_time_label.config(text="Time: 0.00")
+        # Preserve the final simulation time in the readout;
+        # only Reset clears it to 0.00.
         if self.mp_result:
+            self.mp_time_label.config(text=f"Time: {self.mp_result.total_time:.2f}")
             self._display_mp_results()
     
     def _mp_reset(self):
@@ -363,7 +365,7 @@ class ProcessManagerWindow:
         start_time = 0
         
         for event in events:
-            if event.event_type == "start":
+            if event.event_type == "start" or event.event_type.startswith("start"):
                 if current_proc is not None:
                     intervals.append((current_proc, start_time, event.time))
                 current_proc = event.process_id
@@ -388,6 +390,8 @@ class ProcessManagerWindow:
         color_map = {p: colors[i % len(colors)] for i, p in enumerate(procs)}
         
         # Draw each interval as a bar
+        y_positions = []
+        y_labels = []
         y = 0.5
         for pid, start, end in merged:
             self.mp_ax.barh(y, end - start, left=start, height=0.6,
@@ -395,13 +399,16 @@ class ProcessManagerWindow:
             if end - start > 0.5:
                 self.mp_ax.text(start + (end - start) / 2, y, pid, ha='center', va='center',
                                color='white', fontsize=8, fontweight='bold')
+            y_positions.append(y)
+            y_labels.append(pid)
             y += 1
         
         self.mp_ax.set_ylim(0, len(merged) + 0.5)
+        self.mp_ax.set_yticks(y_positions)
+        self.mp_ax.set_yticklabels(y_labels, color='white')
         self.mp_ax.set_xlim(0, max(r.total_time, 1) * 1.05)
-        self.mp_ax.set_yticks([])
         self.mp_ax.set_xlabel('Time', color='white')
-        self.mp_ax.set_title(f'CPU Timeline - {r.algorithm.value.replace("_", " ").title()}', color='white')
+        self.mp_ax.set_title(f'CPU Timeline - {r.algorithm.replace("_", " ").title()}', color='white')
         
         self.mp_fig.tight_layout()
         self.mp_canvas.draw()
