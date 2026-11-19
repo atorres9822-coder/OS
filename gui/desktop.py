@@ -188,11 +188,11 @@ class DesktopIcon:
     
     # Module symbol mapping for recognizable desktop icons
     SYMBOLS = {
-        "CPU Scheduler": "⚙",
+        "CPU Scheduler": "🖥",
         "Deadlock Manager": "🔒",
-        "Memory Manager": "MEM",
-        "Disk Scheduler": "💾",
-        "Process Manager": "PRC",
+        "Memory Manager": "🧠",
+        "Disk Scheduler": "💿",
+        "Process Manager": "🔄",
         "System Monitor": "📊",
     }
     
@@ -225,28 +225,28 @@ class DesktopIcon:
         # Subtle dark background for icon area (transparent enough to see wallpaper)
         self.icon_id = self.canvas.create_rectangle(
             self.x, self.y, 
-            self.x + 70, self.y + 70,
+            self.x + 74, self.y + 74,
             fill="#1a1a1a", outline=COLORS["border"], width=1,
             tags="icon", stipple="gray50"
         )
         
         # Icon symbol (larger, centered in the icon area)
-        symbol = self.SYMBOLS.get(self.text, self.text[:3].upper())
+        symbol = self.SYMBOLS.get(self.text, "⊛")
         self.symbol_id = self.canvas.create_text(
-            self.x + 35, self.y + 33,
+            self.x + 37, self.y + 36,
             text=symbol,
             fill="#ffffff",
-            font=("Segoe UI", 14, "bold"),
+            font=("Segoe UI Emoji", 22),
             tags="icon_symbol"
         )
         
         # Icon text label (beneath the icon)
         self.text_id = self.canvas.create_text(
-            self.x + 35, self.y + 86,
+            self.x + 37, self.y + 93,
             text=self.text,
             fill="#ffffff",
-            font=("Segoe UI", 9, "bold"),
-            width=70,
+            font=("Segoe UI", 10, "bold"),
+            width=74,
             justify=tk.CENTER,
             tags="icon_text"
         )
@@ -303,7 +303,7 @@ class DesktopIcon:
         self._update_appearance()
     
     def get_bounds(self):
-        return (self.x, self.y, self.x + 70, self.y + 100)
+        return (self.x, self.y, self.x + 74, self.y + 115)
 
 
 class TaskbarButton:
@@ -459,8 +459,8 @@ class DesktopApp:
         self.wallpaper_photo = None
         
         # Setup UI
-        self._setup_desktop()
         self._setup_taskbar()
+        self._setup_desktop()
         self._setup_start_menu()
         self._create_desktop_icons()
         
@@ -556,6 +556,7 @@ class DesktopApp:
         self.taskbar = tk.Frame(self.root, bg=COLORS["bg_panel"], height=40)
         self.taskbar.pack(side=tk.BOTTOM, fill=tk.X)
         self.taskbar.pack_propagate(False)
+        self.taskbar.lift()  # Ensure taskbar stays on top of desktop canvas
         
         # Start button
         self.start_button = tk.Button(
@@ -617,11 +618,11 @@ class DesktopApp:
         ]
 
         # Vertical column on left side of desktop
-        icon_w = 70
-        icon_h = 100  # includes text below icon
-        v_gap = 25  # vertical gap between shortcuts
-        x = 20  # left margin
-        y = 60  # start from top area
+        icon_w = 74
+        icon_h = 115  # includes text below icon
+        v_gap = 20  # vertical gap between shortcuts
+        x = 22  # left margin
+        y = 70  # start from top area
 
         self.desktop_icons = []
         for idx, (name, module_key, cmd) in enumerate(modules):
