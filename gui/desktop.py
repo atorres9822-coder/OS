@@ -244,10 +244,10 @@ class DesktopIcon:
         # Corner pins
         pin = 4
         for cx, cy in [(pad, pad), (size-pad, pad), (pad, size-pad), (size-pad, size-pad)]:
-            draw.rectangle([cx-pin//2, cy-pin//2, cx+pin//2, cy+pin//2], fill=self.icon_color)
+            draw.rectangle([cx-pin//2, cy-pin//2, cx+pin//2, cy+pin//2], fill="#ffffff")
         # Center lines
-        draw.line([pad+10, pad+10, size-pad-10, size-pad-10], fill=self.icon_color, width=2)
-        draw.line([size-pad-10, pad+10, pad+10, size-pad-10], fill=self.icon_color, width=2)
+        draw.line([pad+10, pad+10, size-pad-10, size-pad-10], fill="#ffffff", width=2)
+        draw.line([size-pad-10, pad+10, pad+10, size-pad-10], fill="#ffffff", width=2)
     
     def _draw_deadlock_icon(self, draw, size):
         """Deadlock: two interlocking circles with center lock symbol."""
@@ -255,15 +255,15 @@ class DesktopIcon:
         r = size // 5
         # Circle 1 (left)
         cx1, cy1 = pad + r + 4, pad + r + 4
-        draw.ellipse([cx1-r, cy1-r, cx1+r, cy1+r], outline=self.icon_color, width=3)
+        draw.ellipse([cx1-r, cy1-r, cx1+r, cy1+r], outline="#ffffff", width=3)
         # Circle 2 (right)
         cx2, cy2 = size-pad-r-4, size-pad-r-4
-        draw.ellipse([cx2-r, cy2-r, cx2+r, cy2+r], outline=self.icon_color, width=3)
+        draw.ellipse([cx2-r, cy2-r, cx2+r, cy2+r], outline="#ffffff", width=3)
         # Center lock padlock
         lx, ly = size // 2, size // 2
         lw, lh = 10, 14
-        draw.rectangle([lx-lw//2, ly-lh//2, lx+lw//2, ly+lh//2], fill=self.icon_color)
-        draw.rectangle([lx-lw//2-2, ly-lh//2-2, lx+lw//2+2, ly-lh//2+2], fill=self.icon_color)
+        draw.rectangle([lx-lw//2, ly-lh//2, lx+lw//2, ly+lh//2], fill="#ffffff")
+        draw.rectangle([lx-lw//2-2, ly-lh//2-2, lx+lw//2+2, ly-lh//2+2], fill="#ffffff")
     
     def _draw_memory_icon(self, draw, size):
         """Memory: stick with line pattern."""
@@ -273,10 +273,10 @@ class DesktopIcon:
         # Contact pins at bottom
         for i in range(4):
             px = pad + 12 + i * 10
-            draw.line([px, size-pad, px+4, size-pad], fill=self.icon_color, width=3)
+            draw.line([px, size-pad, px+4, size-pad], fill="#ffffff", width=3)
         # Data lines
-        draw.line([pad+12, pad+12, size-pad-12, pad+12], fill=self.icon_color, width=2)
-        draw.line([pad+12, size-pad-12, size-pad-12, size-pad-12], fill=self.icon_color, width=2)
+        draw.line([pad+12, pad+12, size-pad-12, pad+12], fill="#ffffff", width=2)
+        draw.line([pad+12, size-pad-12, size-pad-12, size-pad-12], fill="#ffffff", width=2)
     
     def _draw_disk_icon(self, draw, size):
         """Disk: drive with platters."""
@@ -286,9 +286,9 @@ class DesktopIcon:
         # Platters (concentric circles)
         cx, cy = size // 2, size // 2
         for r in range(6, size // 2 - 6, 8):
-            draw.ellipse([cx-r, cy-r, cx+r, cy+r], outline=self.icon_color, width=2)
+            draw.ellipse([cx-r, cy-r, cx+r, cy+r], outline="#ffffff", width=2)
         # Center dot
-        draw.ellipse([cx-2, cy-2, cx+2, cy+2], fill=self.icon_color)
+        draw.ellipse([cx-2, cy-2, cx+2, cy+2], fill="#ffffff")
     
     def _draw_process_icon(self, draw, size):
         """Process: rectangles with arrow (process flow)."""
@@ -297,8 +297,8 @@ class DesktopIcon:
         draw.rectangle([pad+4, pad+6, pad+26, size-pad-6], fill="#ffffff", outline=self.icon_color, width=2)
         draw.rectangle([size-pad-26, pad+6, size-pad-4, size-pad-6], fill="#ffffff", outline=self.icon_color, width=2)
         # Arrow between them
-        draw.line([pad+28, size//2, size-pad-28, size//2], fill=self.icon_color, width=3)
-        draw.polygon([size-pad-28, size//2-6, size-pad-28, size//2+6, size-pad-20, size//2], fill=self.icon_color)
+        draw.line([pad+28, size//2, size-pad-28, size//2], fill="#ffffff", width=3)
+        draw.polygon([size-pad-28, size//2-6, size-pad-28, size//2+6, size-pad-20, size//2], fill="#ffffff")
     
     def _draw_monitor_icon(self, draw, size):
         """Monitor: bar chart."""
@@ -307,7 +307,7 @@ class DesktopIcon:
         gap = 4
         heights = [14, 22, 10, 18]
         base_y = size - pad - 4
-        colors_cycle = [self.icon_color, "#cccccc", self.icon_color, "#cccccc"]
+        colors_cycle = ["#ffffff", "#cccccc", "#ffffff", "#cccccc"]
         for i, h in enumerate(heights):
             x = pad + i * (bar_width + gap)
             y = base_y - h
