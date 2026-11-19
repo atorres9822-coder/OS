@@ -148,7 +148,8 @@ class MemoryWindow:
         addr_frame.pack(fill=tk.X, pady=5)
         
         self.logical_addr_var = tk.IntVar(value=0)
-        ttk.Entry(addr_frame, textvariable=self.logical_addr_var, width=15).pack(side=tk.LEFT, padx=5)
+        self.logical_addr_entry = ttk.Entry(addr_frame, textvariable=self.logical_addr_var, width=15)
+        self.logical_addr_entry.pack(side=tk.LEFT, padx=5)
         ttk.Button(addr_frame, text="Translate", command=self._translate_address).pack(side=tk.LEFT, padx=5)
         
         self.translation_result = tk.Text(frame, height=6, bg=COLORS["bg_panel"], fg=COLORS["text_primary"], font=FONTS["mono_small"])
@@ -188,6 +189,7 @@ class MemoryWindow:
             
             self._refresh_page_table()
             self._draw_paging_visualization()
+            self._refresh_translation()
             
         except Exception as e:
             messagebox.showerror("Error", str(e))
@@ -234,6 +236,7 @@ class MemoryWindow:
         self.page_table[page] = PageTableEntry(frame_number=frame if valid else -1, valid=valid)
         self._refresh_page_table()
         self._draw_paging_visualization()
+        self._refresh_translation()
     
     def _auto_assign_frames(self):
         """Auto-assign frames to pages."""
@@ -252,6 +255,7 @@ class MemoryWindow:
         
         self._refresh_page_table()
         self._draw_paging_visualization()
+        self._refresh_translation()
     
     def _translate_address(self):
         """Translate logical address using live page table state."""
@@ -332,7 +336,19 @@ class MemoryWindow:
         )
         self.translation_result.tag_add("success", "1.0", "end")
         self.translation_result.tag_config("success", foreground="#00ff00")
-    
+
+    def _refresh_translation(self):
+        """Refresh address translation when page table changes.
+        
+        Re-runs translation for the current Logical Address input,
+        or clears the output box if the input is empty.
+        """
+        addr_text = self.logical_addr_entry.get().strip()
+        if not addr_text:
+            self.translation_result.delete(1.0, tk.END)
+            return
+        self._translate_address()
+
     def _draw_paging_visualization(self):
         """Draw paging memory map."""
         self.paging_ax.clear()
