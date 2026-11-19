@@ -477,23 +477,46 @@ class DesktopApp:
         self.start_menu.toggle(x, y)
     
     def _create_desktop_icons(self):
-        """Create desktop icons for each simulation module."""
+        """Create desktop icons for each simulation module.
+
+        Icons are arranged in a centered grid that uses available screen space
+        effectively, positioned in the upper portion of the desktop.
+        """
         modules = [
-            ("CPU Scheduler", "#0078d7", lambda: self.open_module("cpu_scheduler")),
-            ("Deadlock Manager", "#e81123", lambda: self.open_module("deadlock")),
-            ("Memory Manager", "#00b294", lambda: self.open_module("memory")),
-            ("Disk Scheduler", "#ff8c00", lambda: self.open_module("disk_scheduling")),
-            ("Process Manager", "#8764b8", lambda: self.open_module("process_manager")),
-            ("System Monitor", "#e67e22", lambda: self.open_module("system_monitor")),
+            ("CPU Scheduler", "#6c8cff", lambda: self.open_module("cpu_scheduler")),
+            ("Deadlock Manager", "#f87171", lambda: self.open_module("deadlock")),
+            ("Memory Manager", "#4ade80", lambda: self.open_module("memory")),
+            ("Disk Scheduler", "#fbbf24", lambda: self.open_module("disk_scheduling")),
+            ("Process Manager", "#a78bfa", lambda: self.open_module("process_manager")),
+            ("System Monitor", "#60a5fa", lambda: self.open_module("system_monitor")),
         ]
-        
-        x, y = 20, 20
-        for name, color, cmd in modules:
+
+        # Icon dimensions
+        icon_w = 80
+        icon_h = 115  # includes text below icon
+        h_gap = 70
+        v_gap = 90
+        cols = 3
+        rows = (len(modules) + cols - 1) // cols
+
+        grid_w = cols * icon_w + (cols - 1) * h_gap
+        grid_h = rows * icon_h + (rows - 1) * v_gap
+
+        screen_w = self.root.winfo_screenwidth()
+        screen_h = self.root.winfo_screenheight()
+
+        # Center horizontally, start at ~15% from top
+        start_x = max(20, (screen_w - grid_w) // 2)
+        start_y = int(screen_h * 0.12)
+
+        self.desktop_icons = []
+        for idx, (name, color, cmd) in enumerate(modules):
+            row = idx // cols
+            col = idx % cols
+            x = start_x + col * (icon_w + h_gap)
+            y = start_y + row * (icon_h + v_gap)
             icon = DesktopIcon(self.desktop_canvas, x, y, name, color, cmd, self)
-            x += 100
-            if x > 600:
-                x = 20
-                y += 130
+            self.desktop_icons.append(icon)
     
     def _on_desktop_click(self, event):
         """Deselect icons when clicking on empty desktop."""
@@ -514,8 +537,9 @@ class DesktopApp:
     
     def deselect_all_icons(self):
         """Deselect all desktop icons."""
-        # This would need access to all icons - simplified for now
-        pass
+        if hasattr(self, 'desktop_icons'):
+            for icon in self.desktop_icons:
+                icon.set_selected(False)
     
     def open_module(self, module_name: str):
         """Open a simulation module window."""
