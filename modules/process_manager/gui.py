@@ -14,7 +14,7 @@ from gui.theme import COLORS, FONTS
 from modules.process_manager.algorithms import (
     ProcessManager, SimulatedProcess, ProcessState, TransitionReason,
     MultiprogrammingResult, MultiprocessingResult, CPUScheduleEvent,
-    generate_sample_processes
+    SchedulingAlgorithm, generate_sample_processes
 )
 
 
@@ -103,10 +103,50 @@ class ProcessManagerWindow:
         param_frame = ttk.LabelFrame(frame, text="Simulation Parameters", padding=5)
         param_frame.pack(fill=tk.X, pady=(10, 0))
         
-        ttk.Label(param_frame, text="Time Slice:").pack(side=tk.LEFT, padx=5)
+        # Algorithm selection
+        algo_frame = ttk.Frame(param_frame)
+        algo_frame.pack(fill=tk.X, pady=(0, 5))
+        ttk.Label(algo_frame, text="Algorithm:").pack(side=tk.LEFT, padx=5)
+        self.mp_algo_var = tk.StringVar(value=SchedulingAlgorithm.ROUND_ROBIN.value)
+        algo_combo = ttk.Combobox(
+            algo_frame,
+            textvariable=self.mp_algo_var,
+            values=[a.value for a in SchedulingAlgorithm],
+            state="readonly",
+            width=18
+        )
+        algo_combo.pack(side=tk.LEFT, padx=5)
+        algo_combo.bind("<<ComboboxSelected>>", self._on_algo_change)
+        
+        # Time Slice (only relevant for Round Robin)
+        ts_frame = ttk.Frame(param_frame)
+        ts_frame.pack(fill=tk.X, pady=(0, 5))
+        self.ts_frame = ts_frame
+        ttk.Label(ts_frame, text="Time Slice:").pack(side=tk.LEFT, padx=5)
         self.mp_timeslice_var = tk.DoubleVar(value=2.0)
-        ttk.Spinbox(param_frame, from_=0.1, to=10.0, increment=0.1, 
-                   textvariable=self.mp_timeslice_var, width=8).pack(side=tk.LEFT, padx=5)
+        self.mp_timeslice_spin = ttk.Spinbox(
+            ts_frame, from_=0.1, to=10.0, increment=0.1,
+            textvariable=self.mp_timeslice_var, width=8
+        )
+        self.mp_timeslice_spin.pack(side=tk.LEFT, padx=5)
+        
+        # Priority info label
+        info_frame = ttk.Frame(param_frame)
+        info_frame.pack(fill=tk.X, pady=(0, 5))
+        ttk.Label(
+            info_frame,
+            text="Priority: lower number = higher priority",
+            font=("Segoe UI", 8),
+            foreground=COLORS["text_secondary"]
+        ).pack(side=tk.LEFT, padx=5)
+    
+    def _on_algo_change(self, event=None):
+        """Handle algorithm selection change."""
+        algo = SchedulingAlgorithm(self.mp_algo_var.get())
+        if algo == SchedulingAlgorithm.ROUND_ROBIN:
+            self.mp_timeslice_spin.configure(state="normal")
+        else:
+            self.mp_timeslice_spin.configure(state="disabled")
     
     # ==================== MULTIPROGRAMMING CONTROLS ====================
     
@@ -249,8 +289,9 @@ class ProcessManagerWindow:
             messagebox.showerror("Error", "No processes defined")
             return
         
+        algo = SchedulingAlgorithm(self.mp_algo_var.get())
         time_slice = self.mp_timeslice_var.get()
-        self.mp_result = ProcessManager.simulate_multiprogramming(processes, time_slice)
+        self.mp_result = ProcessManager.simulate_multiprogramming(processes, algo, time_slice)
         self._display_mp_results()
     
     def _mp_pause(self):
@@ -315,45 +356,52 @@ class ProcessManagerWindow:
             self.mp_canvas.draw()
             return
         
-        proc_intervals = {}
+        # Build execution intervals from schedule events
+        # Merge consecutive same-process intervals (e.g., preempt + immediate re-dispatch)
+        intervals = []  # List of (pid, start, end)
         current_proc = None
         start_time = 0
         
         for event in events:
             if event.event_type == "start":
-                if current_proc:
-                    if current_proc not in proc_intervals:
-                        proc_intervals[current_proc] = []
-                    proc_intervals[current_proc].append((start_time, event.time))
+                if current_proc is not None:
+                    intervals.append((current_proc, start_time, event.time))
                 current_proc = event.process_id
                 start_time = event.time
             elif event.event_type in ("preempt", "io", "complete"):
-                if current_proc:
-                    if current_proc not in proc_intervals:
-                        proc_intervals[current_proc] = []
-                    proc_intervals[current_proc].append((start_time, event.time))
+                if current_proc is not None:
+                    intervals.append((current_proc, start_time, event.time))
                 current_proc = None
         
-        procs = list(proc_intervals.keys())
+        # Merge consecutive intervals of the same process
+        merged = []
+        for pid, start, end in intervals:
+            if merged and merged[-1][0] == pid and merged[-1][2] == start:
+                # Extend the previous interval
+                merged[-1] = (pid, merged[-1][1], end)
+            else:
+                merged.append((pid, start, end))
+        
+        # Group intervals by process for color assignment
+        procs = sorted(set(pid for pid, _, _ in merged))
         colors = ['#6c8cff', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#60a5fa']
         color_map = {p: colors[i % len(colors)] for i, p in enumerate(procs)}
         
+        # Draw each interval as a bar
         y = 0.5
-        for proc, intervals in proc_intervals.items():
-            for start, end in intervals:
-                self.mp_ax.barh(y, end - start, left=start, height=0.6,
-                               color=color_map[proc], edgecolor='white', linewidth=0.5)
-                if end - start > 1:
-                    self.mp_ax.text(start + (end-start)/2, y, proc, ha='center', va='center',
-                                   color='white', fontsize=8, fontweight='bold')
+        for pid, start, end in merged:
+            self.mp_ax.barh(y, end - start, left=start, height=0.6,
+                           color=color_map[pid], edgecolor='white', linewidth=0.5)
+            if end - start > 0.5:
+                self.mp_ax.text(start + (end - start) / 2, y, pid, ha='center', va='center',
+                               color='white', fontsize=8, fontweight='bold')
             y += 1
         
-        self.mp_ax.set_ylim(0, len(procs) + 0.5)
-        self.mp_ax.set_xlim(0, r.total_time * 1.05)
-        self.mp_ax.set_yticks([i + 0.5 for i in range(len(procs))])
-        self.mp_ax.set_yticklabels(procs)
+        self.mp_ax.set_ylim(0, len(merged) + 0.5)
+        self.mp_ax.set_xlim(0, max(r.total_time, 1) * 1.05)
+        self.mp_ax.set_yticks([])
         self.mp_ax.set_xlabel('Time', color='white')
-        self.mp_ax.set_title('Multiprogramming CPU Timeline', color='white')
+        self.mp_ax.set_title(f'CPU Timeline - {r.algorithm.value.replace("_", " ").title()}', color='white')
         
         self.mp_fig.tight_layout()
         self.mp_canvas.draw()
