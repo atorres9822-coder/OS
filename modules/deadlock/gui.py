@@ -92,88 +92,105 @@ class DeadlockWindow:
         # Clear existing matrices_frame and rebuild
         for widget in self.matrices_frame.winfo_children():
             widget.destroy()
-        
+
         self.matrix_container = ttk.Frame(self.matrices_frame)
         self.matrix_container.pack(fill=tk.BOTH, expand=True)
-        
+
         self.alloc_entries = []
         self.max_entries = []
         self.need_labels = []
-        
+
         n_proc = self.num_processes_var.get()
         n_res = self.num_resources_var.get()
-        
+
         if not self.state:
             return
-        
-        # Compact process-oriented layout: each process gets a row group
-        # with Allocation, Maximum, Need shown side by side
+
+        # Header row: Process | Allocation (R0..Rn) | Maximum (R0..Rn) | Need (auto) (R0..Rn)
         header_frame = ttk.Frame(self.matrix_container)
-        header_frame.pack(fill=tk.X, pady=(0, 4))
-        
-        ttk.Label(header_frame, text="Process", font=FONTS["heading"], width=10).pack(side=tk.LEFT, padx=2)
-        ttk.Label(header_frame, text="Allocation", font=FONTS["heading"]).pack(side=tk.LEFT, padx=10)
-        ttk.Label(header_frame, text="Maximum", font=FONTS["heading"]).pack(side=tk.LEFT, padx=10)
-        ttk.Label(header_frame, text="Need (auto)", font=FONTS["heading"]).pack(side=tk.LEFT, padx=10)
-        
-        # Resource column headers (small, above each matrix block)
+        header_frame.grid(row=0, column=0, columnspan=1 + 3 * n_res, sticky=tk.EW, pady=(0, 4))
+
+        ttk.Label(header_frame, text="Process", font=FONTS["heading"], width=10).grid(row=0, column=0, padx=2)
+
+        # Allocation header spanning resource columns
+        alloc_header = ttk.Frame(header_frame)
+        alloc_header.grid(row=0, column=1, columnspan=n_res, padx=5)
+        ttk.Label(alloc_header, text="Allocation", font=FONTS["heading"]).pack()
+
+        # Maximum header spanning resource columns
+        max_header = ttk.Frame(header_frame)
+        max_header.grid(row=0, column=1 + n_res, columnspan=n_res, padx=5)
+        ttk.Label(max_header, text="Maximum", font=FONTS["heading"]).pack()
+
+        # Need header spanning resource columns
+        need_header = ttk.Frame(header_frame)
+        need_header.grid(row=0, column=1 + 2 * n_res, columnspan=n_res, padx=5)
+        ttk.Label(need_header, text="Need (auto)", font=FONTS["heading"]).pack()
+
+        # Resource column sub-headers (R0, R1, ...) repeated for each section
         res_header_frame = ttk.Frame(self.matrix_container)
-        res_header_frame.pack(fill=tk.X, pady=(0, 2))
-        ttk.Label(res_header_frame, text="", width=10).pack(side=tk.LEFT)
-        for j in range(n_res):
-            ttk.Label(res_header_frame, text=f"R{j}", font=FONTS["small"], width=6).pack(side=tk.LEFT, padx=1)
-        ttk.Label(res_header_frame, text="", width=6).pack(side=tk.LEFT, padx=1)
-        for j in range(n_res):
-            ttk.Label(res_header_frame, text=f"R{j}", font=FONTS["small"], width=6).pack(side=tk.LEFT, padx=1)
-        ttk.Label(res_header_frame, text="", width=6).pack(side=tk.LEFT, padx=1)
-        for j in range(n_res):
-            ttk.Label(res_header_frame, text=f"R{j}", font=FONTS["small"], width=6).pack(side=tk.LEFT, padx=1)
-        
+        res_header_frame.grid(row=1, column=0, columnspan=1 + 3 * n_res, sticky=tk.EW, pady=(0, 2))
+
+        # Empty label for Process column
+        ttk.Label(res_header_frame, text="", width=10).grid(row=0, column=0, padx=2)
+
+        # Resource headers for each section
+        for section in range(3):
+            for j in range(n_res):
+                col = 1 + section * n_res + j
+                ttk.Label(res_header_frame, text=f"R{j}", font=FONTS["small"], width=6).grid(
+                    row=0, column=col, padx=1
+                )
+
         # Process rows
         for i in range(n_proc):
-            proc_frame = ttk.Frame(self.matrix_container)
-            proc_frame.pack(fill=tk.X, pady=1)
-            
             # Process label
-            ttk.Label(proc_frame, text=f"P{i}", font=FONTS["body"], width=10).pack(side=tk.LEFT, padx=2)
-            
-            # Allocation row (editable)
-            alloc_row = ttk.Frame(proc_frame)
-            alloc_row.pack(side=tk.LEFT, padx=4)
+            ttk.Label(self.matrix_container, text=f"P{i}", font=FONTS["body"], width=10).grid(
+                row=i + 2, column=0, padx=2, sticky=tk.E
+            )
+
+            # Allocation row entries
             row_alloc = []
             for j in range(n_res):
-                entry = ttk.Entry(alloc_row, width=5, justify=tk.CENTER)
-                entry.pack(side=tk.LEFT, padx=1)
+                entry = ttk.Entry(self.matrix_container, width=6, justify=tk.CENTER)
+                entry.grid(row=i + 2, column=1 + j, padx=1, pady=1)
                 entry.insert(0, str(self.state.allocation[i][j]))
                 entry.bind("<FocusOut>", lambda e, pi=i, pj=j: self._on_matrix_change(pi, pj, "alloc"))
                 row_alloc.append(entry)
             self.alloc_entries.append(row_alloc)
-            
-            # Maximum row (editable)
-            max_row = ttk.Frame(proc_frame)
-            max_row.pack(side=tk.LEFT, padx=4)
+
+            # Maximum row entries
             row_max = []
             for j in range(n_res):
-                entry = ttk.Entry(max_row, width=5, justify=tk.CENTER)
-                entry.pack(side=tk.LEFT, padx=1)
+                entry = ttk.Entry(self.matrix_container, width=6, justify=tk.CENTER)
+                entry.grid(row=i + 2, column=1 + n_res + j, padx=1, pady=1)
                 entry.insert(0, str(self.state.maximum[i][j]))
                 entry.bind("<FocusOut>", lambda e, pi=i, pj=j: self._on_matrix_change(pi, pj, "max"))
                 row_max.append(entry)
             self.max_entries.append(row_max)
-            
-            # Need row (read-only, auto-calculated)
-            need_row = ttk.Frame(proc_frame)
-            need_row.pack(side=tk.LEFT, padx=4)
+
+            # Need row labels (read-only, auto-calculated)
             row_need = []
             for j in range(n_res):
                 need_val = self.state.maximum[i][j] - self.state.allocation[i][j]
-                lbl = ttk.Label(need_row, text=str(need_val), width=6, anchor=tk.CENTER,
-                               background=COLORS["bg_card"], foreground=COLORS["text_secondary"],
-                               relief="solid", borderwidth=1)
-                lbl.pack(side=tk.LEFT, padx=1)
                 self.state.need[i][j] = need_val
+                lbl = ttk.Label(
+                    self.matrix_container,
+                    text=str(need_val),
+                    width=6,
+                    anchor=tk.CENTER,
+                    background=COLORS["bg_card"],
+                    foreground=COLORS["text_secondary"],
+                    relief="solid",
+                    borderwidth=1,
+                )
+                lbl.grid(row=i + 2, column=1 + 2 * n_res + j, padx=1, pady=1)
                 row_need.append(lbl)
             self.need_labels.append(row_need)
+
+        # Configure column weights so columns don't stretch unevenly
+        for col in range(1 + 3 * n_res):
+            self.matrix_container.grid_columnconfigure(col, weight=0)
     
     def _on_matrix_change(self, process_idx: int, resource_idx: int, field: str):
         """Handle matrix value change."""
@@ -201,59 +218,6 @@ class DeadlockWindow:
                     self.state.maximum[process_idx][resource_idx] = self.state.allocation[process_idx][resource_idx]
                     self.max_entries[process_idx][resource_idx].delete(0, tk.END)
                     self.max_entries[process_idx][resource_idx].insert(0, str(self.state.maximum[process_idx][resource_idx]))
-            
-            self._update_need_matrix()
-            
-        except ValueError:
-            messagebox.showerror("Error", "Please enter valid non-negative integers")
-            self._refresh_matrix_values()
-    
-    def _update_need_matrix(self):
-        """Update the need matrix display."""
-        if not self.state:
-            return
-        
-        for i in range(self.state.num_processes):
-            for j in range(self.state.num_resources):
-                need_val = self.state.maximum[i][j] - self.state.allocation[i][j]
-                self.state.need[i][j] = need_val
-                self.need_labels[i][j].config(text=str(need_val))
-    
-    def _refresh_matrix_values(self):
-        """Refresh matrix entry values from state."""
-        if not self.state:
-            return
-        
-        for i in range(self.state.num_processes):
-            for j in range(self.state.num_resources):
-                self.alloc_entries[i][j].delete(0, tk.END)
-                self.alloc_entries[i][j].insert(0, str(self.state.allocation[i][j]))
-                self.max_entries[i][j].delete(0, tk.END)
-                self.max_entries[i][j].insert(0, str(self.state.maximum[i][j]))
-    
-    def _on_matrix_change(self, process_idx: int, resource_idx: int, frame):
-        """Handle matrix value change."""
-        try:
-            if frame == self.alloc_frame:
-                val = int(self.alloc_entries[process_idx][resource_idx].get())
-                if val < 0:
-                    raise ValueError
-                self.state.allocation[process_idx][resource_idx] = val
-            else:
-                val = int(self.max_entries[process_idx][resource_idx].get())
-                if val < 0:
-                    raise ValueError
-                self.state.maximum[process_idx][resource_idx] = val
-            
-            # Validate allocation <= maximum
-            if self.state.allocation[process_idx][resource_idx] > self.state.maximum[process_idx][resource_idx]:
-                messagebox.showerror("Error", "Allocation cannot exceed Maximum")
-                # Revert
-                if frame == self.alloc_frame:
-                    self.state.allocation[process_idx][resource_idx] = self.state.maximum[process_idx][resource_idx]
-                else:
-                    self.state.maximum[process_idx][resource_idx] = self.state.allocation[process_idx][resource_idx]
-                self._refresh_matrix_values()
             
             self._update_need_matrix()
             
