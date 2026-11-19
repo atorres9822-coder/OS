@@ -865,6 +865,8 @@ class MemoryWindow:
         ttk.Entry(req_form, textvariable=self.req_size_var, width=8).pack(side=tk.LEFT, padx=2)
         
         ttk.Button(req_form, text="Add Request", command=self._add_request).pack(side=tk.LEFT, padx=5)
+        ttk.Button(req_form, text="Update", command=self._update_request).pack(side=tk.LEFT, padx=5)
+        ttk.Button(req_form, text="Clear", command=self._clear_request_form).pack(side=tk.LEFT, padx=5)
         
         # Request list
         req_columns = ("PID", "Size")
@@ -873,6 +875,9 @@ class MemoryWindow:
             self.req_tree.heading(col, text=col)
             self.req_tree.column(col, width=80, anchor=tk.CENTER)
         self.req_tree.pack(fill=tk.X, pady=5)
+        
+        # Bind selection to populate form
+        self.req_tree.bind("<<TreeviewSelect>>", self._on_request_select)
         
         # Algorithm selection
         algo_frame = ttk.LabelFrame(parent, text="Algorithm", padding=10)
@@ -964,6 +969,52 @@ class MemoryWindow:
             
             self.process_requests.append((pid, size))
             self.req_tree.insert("", tk.END, values=(pid, size))
+            self.req_pid_var.set("")
+            self.req_size_var.set(0)
+            
+        except ValueError:
+            messagebox.showerror("Error", "Invalid values")
+    
+    def _on_request_select(self, event):
+        """Populate form from selected request."""
+        selection = self.req_tree.selection()
+        if not selection:
+            return
+        values = self.req_tree.item(selection[0])['values']
+        self.req_pid_var.set(str(values[0]))
+        self.req_size_var.set(int(values[1]))
+    
+    def _clear_request_form(self):
+        """Clear request input fields and selection."""
+        self.req_pid_var.set("")
+        self.req_size_var.set(0)
+        self.req_tree.selection_remove(self.req_tree.selection())
+    
+    def _update_request(self):
+        """Update selected request or add new one with validation."""
+        pid = self.req_pid_var.get().strip()
+        try:
+            size = self.req_size_var.get()
+            
+            if not pid:
+                messagebox.showerror("Error", "Process ID required")
+                return
+            if size <= 0:
+                messagebox.showerror("Error", "Size must be positive")
+                return
+            
+            selection = self.req_tree.selection()
+            if selection:
+                # Update existing request
+                idx = self.req_tree.index(selection[0])
+                self.process_requests[idx] = (pid, size)
+                self.req_tree.item(selection[0], values=(pid, size))
+                self.req_tree.selection_remove(selection)
+            else:
+                # Add new request (same as Add Request)
+                self.process_requests.append((pid, size))
+                self.req_tree.insert("", tk.END, values=(pid, size))
+            
             self.req_pid_var.set("")
             self.req_size_var.set(0)
             
