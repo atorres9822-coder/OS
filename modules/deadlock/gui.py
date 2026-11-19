@@ -192,7 +192,7 @@ class DeadlockWindow:
             # Need row labels (read-only, auto-calculated)
             row_need = []
             for j in range(n_res):
-                need_val = self.state.maximum[i][j] - self.state.allocation[i][j]
+                need_val = max(0, self.state.maximum[i][j] - self.state.allocation[i][j])
                 self.state.need[i][j] = need_val
                 lbl = ttk.Label(
                     self.matrix_container,
@@ -243,6 +243,8 @@ class DeadlockWindow:
             
             self._update_need_matrix()
             
+            self._draw_visualization()
+            
         except ValueError:
             messagebox.showerror("Error", "Please enter valid non-negative integers")
             self._refresh_matrix_values()
@@ -254,7 +256,7 @@ class DeadlockWindow:
         
         for i in range(self.state.num_processes):
             for j in range(self.state.num_resources):
-                need_val = self.state.maximum[i][j] - self.state.allocation[i][j]
+                need_val = max(0, self.state.maximum[i][j] - self.state.allocation[i][j])
                 self.state.need[i][j] = need_val
                 self.need_labels[i][j].config(text=str(need_val))
     
