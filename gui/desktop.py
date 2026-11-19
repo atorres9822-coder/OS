@@ -483,19 +483,7 @@ class DesktopApp:
         
         # Load and draw wallpaper
         self._load_wallpaper()
-        
-        # Draw a subtle grid overlay on top of wallpaper
-        self._draw_background()
     
-    def _draw_background(self):
-        """Draw a subtle background pattern."""
-        width = self.root.winfo_screenwidth()
-        height = self.root.winfo_screenheight()
-        for x in range(0, width, 50):
-            self.desktop_canvas.create_line(x, 0, x, height, fill=COLORS["desktop_grid"], width=1)
-        for y in range(0, height, 50):
-            self.desktop_canvas.create_line(0, y, width, y, fill=COLORS["desktop_grid"], width=1)
-
     def _maximize_root_window(self):
         """Maximize the root window to fill the screen (Linux-compatible)."""
         screen_w = self.root.winfo_screenwidth()
@@ -563,15 +551,6 @@ class DesktopApp:
         )
         self.desktop_canvas.tag_lower("wallpaper")
 
-    def _draw_background(self):
-        """Draw a subtle grid overlay on top of the wallpaper."""
-        width = self.root.winfo_screenwidth()
-        height = self.root.winfo_screenheight()
-        for x in range(0, width, 60):
-            self.desktop_canvas.create_line(x, 0, x, height, fill=COLORS["desktop_grid"], width=1)
-        for y in range(0, height, 60):
-            self.desktop_canvas.create_line(0, y, width, y, fill=COLORS["desktop_grid"], width=1)
-    
     def _setup_taskbar(self):
         """Create the taskbar at the bottom."""
         self.taskbar = tk.Frame(self.root, bg=COLORS["bg_panel"], height=40)
@@ -659,9 +638,7 @@ class DesktopApp:
     def _on_resize(self, event):
         """Handle window resize."""
         if event.widget == self.root:
-            self.desktop_canvas.delete("background")
             self._draw_wallpaper()
-            self._draw_background()
     
     def select_icon(self, icon: DesktopIcon):
         """Select a desktop icon."""

@@ -35,7 +35,6 @@ COLORS = {
     
     # Desktop
     "desktop_bg": "#0a0c10",
-    "desktop_grid": "#12141c",
 }
 
 # Fonts
