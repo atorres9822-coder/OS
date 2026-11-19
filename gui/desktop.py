@@ -186,16 +186,6 @@ class Window:
 class DesktopIcon:
     """Represents an icon on the desktop."""
     
-    # Module symbol mapping for recognizable desktop icons
-    SYMBOLS = {
-        "CPU Scheduler": "🖥",
-        "Deadlock Manager": "🔒",
-        "Memory Manager": "🧠",
-        "Disk Scheduler": "💿",
-        "Process Manager": "🔄",
-        "System Monitor": "📊",
-    }
-    
     def __init__(
         self, 
         canvas: tk.Canvas, 
@@ -216,10 +206,107 @@ class DesktopIcon:
         self.is_selected = False
         self.is_hovered = False
         self.icon_id = None
-        self.symbol_id = None
+        self.image_id = None
         self.text_id = None
+        self.icon_photo = None
         self._draw()
         self._bind_events()
+    
+    def _create_icon_image(self):
+        """Draw a simple desktop shortcut icon using PIL."""
+        from PIL import ImageDraw
+        
+        size = 56
+        img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        
+        # Draw module-specific icon
+        if self.text == "CPU Scheduler":
+            self._draw_cpu_icon(draw, size)
+        elif self.text == "Deadlock Manager":
+            self._draw_deadlock_icon(draw, size)
+        elif self.text == "Memory Manager":
+            self._draw_memory_icon(draw, size)
+        elif self.text == "Disk Scheduler":
+            self._draw_disk_icon(draw, size)
+        elif self.text == "Process Manager":
+            self._draw_process_icon(draw, size)
+        elif self.text == "System Monitor":
+            self._draw_monitor_icon(draw, size)
+        
+        return ImageTk.PhotoImage(img)
+    
+    def _draw_cpu_icon(self, draw, size):
+        """CPU chip: rectangle with corner pins."""
+        pad = 8
+        # Chip body
+        draw.rectangle([pad, pad, size-pad, size-pad], fill="#ffffff", outline=self.icon_color, width=2)
+        # Corner pins
+        pin = 4
+        for cx, cy in [(pad, pad), (size-pad, pad), (pad, size-pad), (size-pad, size-pad)]:
+            draw.rectangle([cx-pin//2, cy-pin//2, cx+pin//2, cy+pin//2], fill=self.icon_color)
+        # Center lines
+        draw.line([pad+10, pad+10, size-pad-10, size-pad-10], fill=self.icon_color, width=2)
+        draw.line([size-pad-10, pad+10, pad+10, size-pad-10], fill=self.icon_color, width=2)
+    
+    def _draw_deadlock_icon(self, draw, size):
+        """Deadlock: two interlocking circles."""
+        pad = 8
+        r = size // 4
+        # Circle 1
+        cx1, cy1 = pad + r, pad + r
+        draw.ellipse([cx1-r, cy1-r, cx1+r, cy1+r], outline=self.icon_color, width=3)
+        # Circle 2
+        cx2, cy2 = size-pad-r, size-pad-r
+        draw.ellipse([cx2-r, cy2-r, cx2+r, cy2+r], outline=self.icon_color, width=3)
+    
+    def _draw_memory_icon(self, draw, size):
+        """Memory: stick with line pattern."""
+        pad = 8
+        # Stick body
+        draw.rectangle([pad+8, pad, size-pad-8, size-pad], fill="#ffffff", outline=self.icon_color, width=2)
+        # Contact pins at bottom
+        for i in range(4):
+            px = pad + 12 + i * 10
+            draw.line([px, size-pad, px+4, size-pad], fill=self.icon_color, width=3)
+        # Data lines
+        draw.line([pad+12, pad+12, size-pad-12, pad+12], fill=self.icon_color, width=2)
+        draw.line([pad+12, size-pad-12, size-pad-12, size-pad-12], fill=self.icon_color, width=2)
+    
+    def _draw_disk_icon(self, draw, size):
+        """Disk: drive with platters."""
+        pad = 8
+        # Drive body
+        draw.rectangle([pad+4, pad+4, size-pad-4, size-pad-4], fill="#ffffff", outline=self.icon_color, width=2)
+        # Platters (concentric circles)
+        cx, cy = size // 2, size // 2
+        for r in range(6, size // 2 - 6, 8):
+            draw.ellipse([cx-r, cy-r, cx+r, cy+r], outline=self.icon_color, width=2)
+        # Center dot
+        draw.ellipse([cx-2, cy-2, cx+2, cy+2], fill=self.icon_color)
+    
+    def _draw_process_icon(self, draw, size):
+        """Process: rectangles with arrow (process flow)."""
+        pad = 8
+        # Process blocks
+        draw.rectangle([pad+4, pad+6, pad+26, size-pad-6], fill="#ffffff", outline=self.icon_color, width=2)
+        draw.rectangle([size-pad-26, pad+6, size-pad-4, size-pad-6], fill="#ffffff", outline=self.icon_color, width=2)
+        # Arrow between them
+        draw.line([pad+28, size//2, size-pad-28, size//2], fill=self.icon_color, width=3)
+        draw.polygon([size-pad-28, size//2-6, size-pad-28, size//2+6, size-pad-20, size//2], fill=self.icon_color)
+    
+    def _draw_monitor_icon(self, draw, size):
+        """Monitor: bar chart."""
+        pad = 8
+        bar_width = 6
+        gap = 4
+        heights = [14, 22, 10, 18]
+        base_y = size - pad - 4
+        colors_cycle = [self.icon_color, "#cccccc", self.icon_color, "#cccccc"]
+        for i, h in enumerate(heights):
+            x = pad + i * (bar_width + gap)
+            y = base_y - h
+            draw.rectangle([x, y, x+bar_width, base_y], fill=colors_cycle[i % 4])
     
     def _draw(self):
         # Use module color for icon background so each shortcut is distinct
@@ -230,19 +317,17 @@ class DesktopIcon:
             tags="icon"
         )
         
-        # Icon symbol (centered in the icon area)
-        symbol = self.SYMBOLS.get(self.text, "⊛")
-        self.symbol_id = self.canvas.create_text(
-            self.x + 37, self.y + 36,
-            text=symbol,
-            fill="#ffffff",
-            font=("Segoe UI Emoji", 20),
+        # Draw actual icon graphic using PIL
+        self.icon_photo = self._create_icon_image()
+        self.image_id = self.canvas.create_image(
+            self.x + 37, self.y + 37,
+            image=self.icon_photo,
             tags="icon_symbol"
         )
         
         # Icon text label (beneath the icon)
         self.text_id = self.canvas.create_text(
-            self.x + 37, self.y + 95,
+            self.x + 37, self.y + 93,
             text=self.text,
             fill="#ffffff",
             font=("Segoe UI", 9, "bold"),
@@ -255,17 +340,17 @@ class DesktopIcon:
         # Single click selects, double click launches
         self.canvas.tag_bind(self.icon_id, "<Button-1>", self._on_click)
         self.canvas.tag_bind(self.text_id, "<Button-1>", self._on_click)
-        self.canvas.tag_bind(self.symbol_id, "<Button-1>", self._on_click)
+        self.canvas.tag_bind(self.image_id, "<Button-1>", self._on_click)
         self.canvas.tag_bind(self.icon_id, "<Double-Button-1>", self._on_double_click)
         self.canvas.tag_bind(self.text_id, "<Double-Button-1>", self._on_double_click)
-        self.canvas.tag_bind(self.symbol_id, "<Double-Button-1>", self._on_double_click)
+        self.canvas.tag_bind(self.image_id, "<Double-Button-1>", self._on_double_click)
         # Hover effects
         self.canvas.tag_bind(self.icon_id, "<Enter>", self._on_enter)
         self.canvas.tag_bind(self.text_id, "<Enter>", self._on_enter)
-        self.canvas.tag_bind(self.symbol_id, "<Enter>", self._on_enter)
+        self.canvas.tag_bind(self.image_id, "<Enter>", self._on_enter)
         self.canvas.tag_bind(self.icon_id, "<Leave>", self._on_leave)
         self.canvas.tag_bind(self.text_id, "<Leave>", self._on_leave)
-        self.canvas.tag_bind(self.symbol_id, "<Leave>", self._on_leave)
+        self.canvas.tag_bind(self.image_id, "<Leave>", self._on_leave)
     
     def _on_click(self, event):
         self.desktop_app.select_icon(self)
