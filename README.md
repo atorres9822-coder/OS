@@ -74,6 +74,29 @@ sudo dnf install python3-tkinter
 
 ## Running the Application
 
+### Quick Start (Recommended)
+
+Use the launcher script for your platform:
+
+**Linux/macOS:**
+```bash
+./run.sh
+```
+
+**Windows:**
+```cmd
+run.bat
+```
+
+The launcher script automatically:
+1. Sets the working directory to the project root
+2. Activates a virtual environment if one is present (`.venv`, `venv`, `env`, `.env`)
+3. Runs `main.py` using Python 3.14 (or falls back to `python3` / `python`)
+
+### Manual Execution
+
+Alternatively, run directly with Python:
+
 ```bash
 python3.14 main.py
 ```
@@ -85,6 +108,23 @@ Or with conda Python (includes all dependencies):
 ```
 
 **Note:** The system `python3` may not have tkinter. Use `python3.14` or conda Python.
+
+### Installing Dependencies
+
+If you encounter missing dependency errors, install the required packages:
+
+```bash
+pip install -r requirements.txt
+```
+
+On Linux, you may need to install tkinter separately:
+```bash
+# Ubuntu/Debian
+sudo apt-get install python3-tk
+
+# Fedora
+sudo dnf install python3-tkinter
+```
 
 ## Project Structure
 
