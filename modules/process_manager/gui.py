@@ -292,6 +292,8 @@ class ProcessManagerWindow:
         algo = SchedulingAlgorithm(self.mp_algo_var.get())
         time_slice = self.mp_timeslice_var.get()
         self.mp_result = ProcessManager.simulate_multiprogramming(processes, algo, time_slice)
+        # Show final simulation timestamp (Reset clears to 0.00)
+        self.mp_time_label.config(text=f"Time: {self.mp_result.total_time:.2f}")
         self._display_mp_results()
     
     def _mp_pause(self):
@@ -407,10 +409,12 @@ class ProcessManagerWindow:
             y_labels.append(pid)
             y += 1
         
-        self.mp_ax.set_ylim(0, len(merged) + 0.5)
+        self.mp_ax.set_ylim(0, len(procs) + 0.5)
         self.mp_ax.set_yticks(y_positions)
         self.mp_ax.set_yticklabels(y_labels, color='white')
-        self.mp_ax.set_xlim(0, max(r.total_time, 1))
+        # Set X-axis upper limit to the max interval end time + small padding
+        max_end = max((e for _, _, e in merged), default=0)
+        self.mp_ax.set_xlim(0, max_end + 5)
         self.mp_ax.set_xlabel('Time', color='white')
         self.mp_ax.set_title(f'CPU Timeline - {r.algorithm.replace("_", " ").title()}', color='white')
         
