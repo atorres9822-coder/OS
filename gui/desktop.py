@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Dict, List, Optional, Callable
 import uuid
-from gui.theme import COLORS, FONTS, apply_ttk_style
+from gui.theme import COLORS, FONTS, MODULE_COLORS, apply_ttk_style
 
 # Import module factories
 from modules.cpu_scheduling.gui import create_cpu_scheduling_module
@@ -171,6 +171,16 @@ class Window:
 class DesktopIcon:
     """Represents an icon on the desktop."""
     
+    # Module symbol mapping for recognizable desktop icons
+    SYMBOLS = {
+        "CPU Scheduler": "⚙",
+        "Deadlock Manager": "🔒",
+        "Memory Manager": "MEM",
+        "Disk Scheduler": "💾",
+        "Process Manager": "PRC",
+        "System Monitor": "📊",
+    }
+    
     def __init__(
         self, 
         canvas: tk.Canvas, 
@@ -189,34 +199,58 @@ class DesktopIcon:
         self.command = command
         self.desktop_app = desktop_app
         self.is_selected = False
+        self.is_hovered = False
         self.icon_id = None
+        self.symbol_id = None
         self.text_id = None
         self._draw()
         self._bind_events()
     
     def _draw(self):
-        # Icon background
+        # Icon background rectangle (the "icon" area)
         self.icon_id = self.canvas.create_rectangle(
             self.x, self.y, 
             self.x + 80, self.y + 80,
             fill=self.icon_color, outline=COLORS["border"], width=2,
             tags="icon"
         )
-        # Icon text
+        
+        # Icon symbol (larger, centered in the icon area)
+        symbol = self.SYMBOLS.get(self.text, self.text[:3].upper())
+        self.symbol_id = self.canvas.create_text(
+            self.x + 40, self.y + 40,
+            text=symbol,
+            fill="#ffffff",
+            font=("Segoe UI", 16, "bold"),
+            tags="icon_symbol"
+        )
+        
+        # Icon text label (beneath the icon)
         self.text_id = self.canvas.create_text(
-            self.x + 40, self.y + 95,
+            self.x + 40, self.y + 98,
             text=self.text,
             fill=COLORS["text_primary"],
             font=FONTS["small"],
             width=80,
+            justify=tk.CENTER,
             tags="icon_text"
         )
     
     def _bind_events(self):
+        # Single click selects, double click launches
         self.canvas.tag_bind(self.icon_id, "<Button-1>", self._on_click)
         self.canvas.tag_bind(self.text_id, "<Button-1>", self._on_click)
+        self.canvas.tag_bind(self.symbol_id, "<Button-1>", self._on_click)
         self.canvas.tag_bind(self.icon_id, "<Double-Button-1>", self._on_double_click)
         self.canvas.tag_bind(self.text_id, "<Double-Button-1>", self._on_double_click)
+        self.canvas.tag_bind(self.symbol_id, "<Double-Button-1>", self._on_double_click)
+        # Hover effects
+        self.canvas.tag_bind(self.icon_id, "<Enter>", self._on_enter)
+        self.canvas.tag_bind(self.text_id, "<Enter>", self._on_enter)
+        self.canvas.tag_bind(self.symbol_id, "<Enter>", self._on_enter)
+        self.canvas.tag_bind(self.icon_id, "<Leave>", self._on_leave)
+        self.canvas.tag_bind(self.text_id, "<Leave>", self._on_leave)
+        self.canvas.tag_bind(self.symbol_id, "<Leave>", self._on_leave)
     
     def _on_click(self, event):
         self.desktop_app.select_icon(self)
@@ -224,12 +258,36 @@ class DesktopIcon:
     def _on_double_click(self, event):
         self.command()
     
+    def _on_enter(self, event):
+        self.is_hovered = True
+        self._update_appearance()
+    
+    def _on_leave(self, event):
+        self.is_hovered = False
+        self._update_appearance()
+    
+    def _update_appearance(self):
+        """Update icon appearance based on hover and selection state."""
+        if self.is_selected:
+            outline = COLORS["accent"]
+            width = 3
+        elif self.is_hovered:
+            outline = COLORS["border_light"]
+            width = 2
+        else:
+            outline = COLORS["border"]
+            width = 2
+        
+        self.canvas.itemconfig(self.icon_id, outline=outline, width=width)
+        
+        # Slightly brighten the icon color on hover
+        if self.is_hovered and not self.is_selected:
+            # Lighten the icon color for hover
+            self.canvas.itemconfig(self.icon_id, fill=self.icon_color)
+    
     def set_selected(self, selected: bool):
         self.is_selected = selected
-        if selected:
-            self.canvas.itemconfig(self.icon_id, outline=COLORS["accent"], width=2)
-        else:
-            self.canvas.itemconfig(self.icon_id, outline=COLORS["border"], width=2)
+        self._update_appearance()
     
     def get_bounds(self):
         return (self.x, self.y, self.x + 80, self.y + 115)
@@ -483,12 +541,12 @@ class DesktopApp:
         effectively, positioned in the upper portion of the desktop.
         """
         modules = [
-            ("CPU Scheduler", "#6c8cff", lambda: self.open_module("cpu_scheduler")),
-            ("Deadlock Manager", "#f87171", lambda: self.open_module("deadlock")),
-            ("Memory Manager", "#4ade80", lambda: self.open_module("memory")),
-            ("Disk Scheduler", "#fbbf24", lambda: self.open_module("disk_scheduling")),
-            ("Process Manager", "#a78bfa", lambda: self.open_module("process_manager")),
-            ("System Monitor", "#60a5fa", lambda: self.open_module("system_monitor")),
+            ("CPU Scheduler", "cpu_scheduler", lambda: self.open_module("cpu_scheduler")),
+            ("Deadlock Manager", "deadlock", lambda: self.open_module("deadlock")),
+            ("Memory Manager", "memory", lambda: self.open_module("memory")),
+            ("Disk Scheduler", "disk_scheduling", lambda: self.open_module("disk_scheduling")),
+            ("Process Manager", "process_manager", lambda: self.open_module("process_manager")),
+            ("System Monitor", "system_monitor", lambda: self.open_module("system_monitor")),
         ]
 
         # Icon dimensions
@@ -510,11 +568,12 @@ class DesktopApp:
         start_y = int(screen_h * 0.12)
 
         self.desktop_icons = []
-        for idx, (name, color, cmd) in enumerate(modules):
+        for idx, (name, module_key, cmd) in enumerate(modules):
             row = idx // cols
             col = idx % cols
             x = start_x + col * (icon_w + h_gap)
             y = start_y + row * (icon_h + v_gap)
+            color = MODULE_COLORS.get(module_key, COLORS["accent"])
             icon = DesktopIcon(self.desktop_canvas, x, y, name, color, cmd, self)
             self.desktop_icons.append(icon)
     
