@@ -137,6 +137,12 @@ class MemoryWindow:
         
         ttk.Button(edit_frame, text="Update", command=self._update_page_table_entry).pack(side=tk.LEFT, padx=10)
         ttk.Button(edit_frame, text="Auto-Assign", command=self._auto_assign_frames).pack(side=tk.LEFT, padx=5)
+        
+        # Inline status label for warnings/messages
+        self.pt_status_var = tk.StringVar(value="")
+        self.pt_status_label = ttk.Label(edit_frame, textvariable=self.pt_status_var, 
+                                        foreground="#ffaa00", font=("Segoe UI", 8, "bold"))
+        self.pt_status_label.pack(side=tk.LEFT, padx=10)
     
     def _create_paging_translation(self, parent):
         """Create address translation panel."""
@@ -226,17 +232,38 @@ class MemoryWindow:
             messagebox.showerror("Error", f"Frame number must be 0-{self.paging_config.num_frames-1}")
             return
         
-        # Check for duplicate frame assignment
+        # Handle frame reassignment: find any other page mapped to this frame
+        reassigned_from = None
         if valid:
             for i, entry in enumerate(self.page_table):
                 if i != page and entry.valid and entry.frame_number == frame:
-                    messagebox.showerror("Error", f"Frame {frame} already assigned to page {i}")
-                    return
+                    # Unmap the previous page from this frame (just like IRL)
+                    self.page_table[i] = PageTableEntry(frame_number=-1, valid=False)
+                    reassigned_from = i
+                    break
         
         self.page_table[page] = PageTableEntry(frame_number=frame if valid else -1, valid=valid)
         self._refresh_page_table()
         self._draw_paging_visualization()
         self._refresh_translation()
+        
+        # Show inline status message
+        if reassigned_from is not None:
+            self.pt_status_var.set(
+                f"Frame {frame} reassigned from Page {reassigned_from} to Page {page}; "
+                f"Page {reassigned_from} is now invalid"
+            )
+            self.pt_status_label.config(foreground="#ffaa00")
+        elif valid:
+            self.pt_status_var.set(
+                f"Page {page} assigned to Frame {frame}"
+            )
+            self.pt_status_label.config(foreground="#00ff00")
+        else:
+            self.pt_status_var.set(
+                f"Page {page} invalidated"
+            )
+            self.pt_status_label.config(foreground="#ffaa00")
     
     def _auto_assign_frames(self):
         """Auto-assign frames to pages."""
