@@ -499,14 +499,25 @@ class DeadlockWindow:
         if result.granted and result.new_state:
             # Apply the new state
             self.state = result.new_state
-            self._refresh_matrix_values()
-            self._update_need_matrix()
-            self._update_available_entries()
-            for j, val in enumerate(self.state.available):
-                if j < len(self.available_entries):
-                    self.available_entries[j].delete(0, tk.END)
-                    self.available_entries[j].insert(0, str(val))
-            self._draw_visualization()
+        
+        # Always refresh UI to reflect current state
+        self._refresh_matrix_values()
+        self._update_need_matrix()
+        self._update_available_entries_individual()
+        
+        if result.granted and result.safety_result:
+            self._draw_visualization(result.safety_result)
+        else:
+            self._draw_visualization(self.last_safety_result)
+    
+    def _update_available_entries_individual(self):
+        """Update available resource entry fields individually (fragile-free)."""
+        if not self.state or not self.available_entries:
+            return
+        for j, val in enumerate(self.state.available):
+            if j < len(self.available_entries):
+                self.available_entries[j].delete(0, tk.END)
+                self.available_entries[j].insert(0, str(val))
     
     def _display_result(self, result):
         """Display result in text area."""
