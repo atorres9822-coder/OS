@@ -250,15 +250,20 @@ class DesktopIcon:
         draw.line([size-pad-10, pad+10, pad+10, size-pad-10], fill=self.icon_color, width=2)
     
     def _draw_deadlock_icon(self, draw, size):
-        """Deadlock: two interlocking circles."""
+        """Deadlock: two interlocking circles with center lock symbol."""
         pad = 8
-        r = size // 4
-        # Circle 1
-        cx1, cy1 = pad + r, pad + r
+        r = size // 5
+        # Circle 1 (left)
+        cx1, cy1 = pad + r + 4, pad + r + 4
         draw.ellipse([cx1-r, cy1-r, cx1+r, cy1+r], outline=self.icon_color, width=3)
-        # Circle 2
-        cx2, cy2 = size-pad-r, size-pad-r
+        # Circle 2 (right)
+        cx2, cy2 = size-pad-r-4, size-pad-r-4
         draw.ellipse([cx2-r, cy2-r, cx2+r, cy2+r], outline=self.icon_color, width=3)
+        # Center lock padlock
+        lx, ly = size // 2, size // 2
+        lw, lh = 10, 14
+        draw.rectangle([lx-lw//2, ly-lh//2, lx+lw//2, ly+lh//2], fill=self.icon_color)
+        draw.rectangle([lx-lw//2-2, ly-lh//2-2, lx+lw//2+2, ly-lh//2+2], fill=self.icon_color)
     
     def _draw_memory_icon(self, draw, size):
         """Memory: stick with line pattern."""
