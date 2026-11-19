@@ -106,66 +106,86 @@ class DeadlockWindow:
         if not self.state:
             return
 
-        # Header row: Process | Allocation (R0..Rn) | Maximum (R0..Rn) | Need (auto) (R0..Rn)
-        header_frame = ttk.Frame(self.matrix_container)
-        header_frame.grid(row=0, column=0, columnspan=1 + 3 * n_res, sticky=tk.EW, pady=(0, 4))
+        total_cols = 1 + 3 * n_res  # Process col + 3 sections x n_res cols
 
-        ttk.Label(header_frame, text="Process", font=FONTS["heading"], width=10).grid(row=0, column=0, padx=2)
+        # Row 0: Section headers - Process | Allocation | Maximum | Need (auto)
+        # Process header (col 0)
+        ttk.Label(
+            self.matrix_container, text="Process",
+            font=FONTS["heading"], width=10, anchor=tk.CENTER
+        ).grid(row=0, column=0, padx=2, pady=(0, 2), sticky=tk.EW)
 
-        # Allocation header spanning resource columns
-        alloc_header = ttk.Frame(header_frame)
-        alloc_header.grid(row=0, column=1, columnspan=n_res, padx=5)
-        ttk.Label(alloc_header, text="Allocation", font=FONTS["heading"]).pack()
+        # Allocation header spanning resource columns (col 1 to 1+n_res-1)
+        ttk.Label(
+            self.matrix_container, text="Allocation",
+            font=FONTS["heading"], anchor=tk.CENTER
+        ).grid(row=0, column=1, columnspan=n_res, padx=5, pady=(0, 2), sticky=tk.EW)
 
-        # Maximum header spanning resource columns
-        max_header = ttk.Frame(header_frame)
-        max_header.grid(row=0, column=1 + n_res, columnspan=n_res, padx=5)
-        ttk.Label(max_header, text="Maximum", font=FONTS["heading"]).pack()
+        # Maximum header spanning resource columns (col 1+n_res to 1+2*n_res-1)
+        ttk.Label(
+            self.matrix_container, text="Maximum",
+            font=FONTS["heading"], anchor=tk.CENTER
+        ).grid(row=0, column=1 + n_res, columnspan=n_res, padx=5, pady=(0, 2), sticky=tk.EW)
 
-        # Need header spanning resource columns
-        need_header = ttk.Frame(header_frame)
-        need_header.grid(row=0, column=1 + 2 * n_res, columnspan=n_res, padx=5)
-        ttk.Label(need_header, text="Need (auto)", font=FONTS["heading"]).pack()
+        # Need header spanning resource columns (col 1+2*n_res to 1+3*n_res-1)
+        ttk.Label(
+            self.matrix_container, text="Need (auto)",
+            font=FONTS["heading"], anchor=tk.CENTER
+        ).grid(row=0, column=1 + 2 * n_res, columnspan=n_res, padx=5, pady=(0, 2), sticky=tk.EW)
 
-        # Resource column sub-headers (R0, R1, ...) repeated for each section
-        res_header_frame = ttk.Frame(self.matrix_container)
-        res_header_frame.grid(row=1, column=0, columnspan=1 + 3 * n_res, sticky=tk.EW, pady=(0, 2))
-
-        # Empty label for Process column
-        ttk.Label(res_header_frame, text="", width=10).grid(row=0, column=0, padx=2)
+        # Row 1: Resource sub-headers (R0, R1, ...) repeated for each section
+        # Empty label for Process column (col 0)
+        ttk.Label(
+            self.matrix_container, text="",
+            font=FONTS["small"], width=10, anchor=tk.CENTER
+        ).grid(row=1, column=0, padx=2, pady=(0, 2), sticky=tk.EW)
 
         # Resource headers for each section
         for section in range(3):
             for j in range(n_res):
                 col = 1 + section * n_res + j
-                ttk.Label(res_header_frame, text=f"R{j}", font=FONTS["small"], width=6).grid(
-                    row=0, column=col, padx=1
-                )
+                ttk.Label(
+                    self.matrix_container, text=f"R{j}",
+                    font=FONTS["small"], width=6, anchor=tk.CENTER
+                ).grid(row=1, column=col, padx=1, pady=(0, 2), sticky=tk.EW)
 
         # Process rows
         for i in range(n_proc):
-            # Process label
-            ttk.Label(self.matrix_container, text=f"P{i}", font=FONTS["body"], width=10).grid(
-                row=i + 2, column=0, padx=2, sticky=tk.E
-            )
+            # Process label (col 0)
+            ttk.Label(
+                self.matrix_container, text=f"P{i}",
+                font=FONTS["body"], width=10, anchor=tk.CENTER
+            ).grid(row=i + 2, column=0, padx=2, pady=1, sticky=tk.EW)
 
-            # Allocation row entries
+            # Allocation row entries (cols 1 to 1+n_res-1)
             row_alloc = []
             for j in range(n_res):
-                entry = ttk.Entry(self.matrix_container, width=6, justify=tk.CENTER)
+                entry = ttk.Entry(
+                    self.matrix_container, width=6, justify=tk.CENTER
+                )
                 entry.grid(row=i + 2, column=1 + j, padx=1, pady=1)
                 entry.insert(0, str(self.state.allocation[i][j]))
-                entry.bind("<FocusOut>", lambda e, pi=i, pj=j: self._on_matrix_change(pi, pj, "alloc"))
+                entry.bind(
+                    "<FocusOut>",
+                    lambda e, pi=i, pj=j: self._on_matrix_change(pi, pj, "alloc"),
+                )
                 row_alloc.append(entry)
             self.alloc_entries.append(row_alloc)
 
-            # Maximum row entries
+            # Maximum row entries (cols 1+n_res to 1+2*n_res-1)
             row_max = []
             for j in range(n_res):
-                entry = ttk.Entry(self.matrix_container, width=6, justify=tk.CENTER)
-                entry.grid(row=i + 2, column=1 + n_res + j, padx=1, pady=1)
+                entry = ttk.Entry(
+                    self.matrix_container, width=6, justify=tk.CENTER
+                )
+                entry.grid(
+                    row=i + 2, column=1 + n_res + j, padx=1, pady=1
+                )
                 entry.insert(0, str(self.state.maximum[i][j]))
-                entry.bind("<FocusOut>", lambda e, pi=i, pj=j: self._on_matrix_change(pi, pj, "max"))
+                entry.bind(
+                    "<FocusOut>",
+                    lambda e, pi=i, pj=j: self._on_matrix_change(pi, pj, "max"),
+                )
                 row_max.append(entry)
             self.max_entries.append(row_max)
 
@@ -184,12 +204,14 @@ class DeadlockWindow:
                     relief="solid",
                     borderwidth=1,
                 )
-                lbl.grid(row=i + 2, column=1 + 2 * n_res + j, padx=1, pady=1)
+                lbl.grid(
+                    row=i + 2, column=1 + 2 * n_res + j, padx=1, pady=1
+                )
                 row_need.append(lbl)
             self.need_labels.append(row_need)
 
         # Configure column weights so columns don't stretch unevenly
-        for col in range(1 + 3 * n_res):
+        for col in range(total_cols):
             self.matrix_container.grid_columnconfigure(col, weight=0)
     
     def _on_matrix_change(self, process_idx: int, resource_idx: int, field: str):
