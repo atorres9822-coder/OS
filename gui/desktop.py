@@ -123,10 +123,14 @@ class Window:
         self._drag_data["y"] = event.y_root
     
     def show(self):
+        """Show and maximize the window."""
+        self.frame.state("zoomed")  # Maximize on launch
         self.frame.deiconify()
         self.frame.lift()
         self.frame.focus_force()
         self.is_minimized = False
+        self.is_maximized = True
+        self.maximize_btn.config(text="❐")
     
     def hide(self):
         self.frame.withdraw()
@@ -134,14 +138,17 @@ class Window:
     def minimize(self):
         self.hide()
         self.is_minimized = True
+        self.is_maximized = False
+        self.maximize_btn.config(text="□")
     
     def toggle_maximize(self):
         if self.is_maximized:
+            self.frame.state("normal")
             self.frame.geometry(f"{self.width}x{self.height}")
             self.maximize_btn.config(text="□")
             self.is_maximized = False
         else:
-            self.frame.geometry(f"{self.parent.winfo_screenwidth()}x{self.parent.winfo_screenheight()}+0+0")
+            self.frame.state("zoomed")
             self.maximize_btn.config(text="❐")
             self.is_maximized = True
     
