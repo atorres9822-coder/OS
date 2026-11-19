@@ -25,7 +25,6 @@ class ProcessManagerWindow:
         self.parent = parent_window
         self.content_frame = content_frame
         self.mp_result: Optional[MultiprogrammingResult] = None
-        self.mpc_result: Optional[MultiprocessingResult] = None
         self.playback_time = 0.0
         self.playback_running = False
         self.playback_speed = 1.0
@@ -36,12 +35,6 @@ class ProcessManagerWindow:
     
     def _setup_ui(self):
         """Setup the UI components."""
-        self._create_multiprogramming_tab()
-    
-    # ==================== MULTIPROGRAMMING TAB ====================
-    
-    def _create_multiprogramming_tab(self):
-        """Create multiprogramming tab (main view)."""
         main_paned = ttk.PanedWindow(self.content_frame, orient=tk.HORIZONTAL)
         main_paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
@@ -58,6 +51,8 @@ class ProcessManagerWindow:
         main_paned.add(right, weight=1)
         
         self._create_mp_visualization(right)
+    
+    # ==================== MULTIPROGRAMMING CONFIG ====================
     
     def _create_mp_config(self, parent):
         """Create multiprogramming configuration."""
@@ -113,6 +108,8 @@ class ProcessManagerWindow:
         ttk.Spinbox(param_frame, from_=0.1, to=10.0, increment=0.1, 
                    textvariable=self.mp_timeslice_var, width=8).pack(side=tk.LEFT, padx=5)
     
+    # ==================== MULTIPROGRAMMING CONTROLS ====================
+    
     def _create_mp_controls(self, parent):
         """Create simulation controls."""
         frame = ttk.LabelFrame(parent, text="Simulation Controls", padding=10)
@@ -135,6 +132,8 @@ class ProcessManagerWindow:
         # Current time display
         self.mp_time_label = ttk.Label(ctrl_frame, text="Time: 0.00")
         self.mp_time_label.pack(side=tk.RIGHT, padx=10)
+    
+    # ==================== MULTIPROGRAMMING RESULTS ====================
     
     def _create_mp_results(self, parent):
         """Create results panel."""
@@ -163,6 +162,8 @@ class ProcessManagerWindow:
         self.mp_log = tk.Text(frame, height=10, bg=COLORS["bg_panel"], fg=COLORS["text_primary"], font=FONTS["mono_small"])
         self.mp_log.pack(fill=tk.BOTH, expand=True)
     
+    # ==================== MULTIPROGRAMMING VISUALIZATION ====================
+    
     def _create_mp_visualization(self, parent):
         """Create Gantt chart visualization."""
         frame = ttk.LabelFrame(parent, text="CPU Timeline", padding=10)
@@ -178,26 +179,184 @@ class ProcessManagerWindow:
         self.mp_canvas = FigureCanvasTkAgg(self.mp_fig, master=frame)
         self.mp_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
     
-    # ==================== MULTIPROCESSING TAB ====================
+    # ==================== MULTIPROGRAMMING HANDLERS ====================
     
-    def _create_multiprocessing_tab(self):
-        """Create multiprocessing tab."""
-        main_paned = ttk.PanedWindow(self.mpc_frame, orient=tk.HORIZONTAL)
-        main_paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+    def _mp_add_process(self):
+        """Add a process from form inputs."""
+        try:
+            pid = self.mp_pid_var.get().strip()
+            arrival = self.mp_arrival_var.get()
+            burst = self.mp_burst_var.get()
+            io_freq = self.mp_io_var.get()
+            priority = self.mp_priority_var.get()
+            
+            if not pid:
+                messagebox.showerror("Error", "Process ID required")
+                return
+            if arrival < 0 or burst <= 0 or io_freq < 0:
+                messagebox.showerror("Error", "Invalid values (arrival >= 0, burst > 0, io_freq >= 0)")
+                return
+            if any(self.mp_tree.item(item)['values'][0] == pid for item in self.mp_tree.get_children()):
+                messagebox.showerror("Error", f"Process {pid} already exists")
+                return
+            
+            self.mp_tree.insert("", tk.END, values=(pid, arrival, burst, io_freq, priority))
+            self.mp_pid_var.set("")
+            self.mp_arrival_var.set(0.0)
+            self.mp_burst_var.set(10.0)
+            self.mp_io_var.set(0.0)
+            self.mp_priority_var.set(0)
+            
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+    
+    def _mp_remove_process(self):
+        """Remove selected process."""
+        selection = self.mp_tree.selection()
+        if not selection:
+            return
+        self.mp_tree.delete(selection[0])
+    
+    def _mp_clear_processes(self):
+        """Clear all processes."""
+        for item in self.mp_tree.get_children():
+            self.mp_tree.delete(item)
+    
+    def _mp_on_select(self, event):
+        """Populate form from selected process."""
+        selection = self.mp_tree.selection()
+        if not selection:
+            return
+        values = self.mp_tree.item(selection[0])['values']
+        self.mp_pid_var.set(str(values[0]))
+        self.mp_arrival_var.set(float(values[1]))
+        self.mp_burst_var.set(float(values[2]))
+        self.mp_io_var.set(float(values[3]))
+        self.mp_priority_var.set(int(values[4]))
+    
+    def _mp_run(self):
+        """Run multiprogramming simulation."""
+        processes = []
+        for item in self.mp_tree.get_children():
+            vals = self.mp_tree.item(item)['values']
+            processes.append(SimulatedProcess(
+                pid=str(vals[0]), arrival_time=float(vals[1]),
+                burst_time=float(vals[2]), io_frequency=float(vals[3]),
+                priority=int(vals[4])
+            ))
         
-        # Left - Configuration
-        left = ttk.Frame(main_paned)
-        main_paned.add(left, weight=1)
+        if not processes:
+            messagebox.showerror("Error", "No processes defined")
+            return
         
-        self._create_mpc_config(left)
-        self._create_mpc_controls(left)
-        self._create_mpc_results(left)
+        time_slice = self.mp_timeslice_var.get()
+        self.mp_result = ProcessManager.simulate_multiprogramming(processes, time_slice)
+        self._display_mp_results()
+    
+    def _mp_pause(self):
+        """Pause playback."""
+        self.playback_running = False
+        if self.playback_after_id:
+            self.parent.after_cancel(self.playback_after_id)
+    
+    def _mp_stop(self):
+        """Stop simulation."""
+        self._mp_pause()
+        self.playback_time = 0.0
+        self.mp_time_label.config(text="Time: 0.00")
+        if self.mp_result:
+            self._display_mp_results()
+    
+    def _mp_reset(self):
+        """Reset simulation."""
+        self._mp_stop()
+        self.mp_result = None
+        for key in self.mp_metrics:
+            self.mp_metrics[key].config(text="--")
+        self.mp_log.delete(1.0, tk.END)
+        self.mp_ax.clear()
+        self.mp_canvas.draw()
+    
+    def _display_mp_results(self):
+        """Display multiprogramming results."""
+        if not self.mp_result:
+            return
         
-        # Right - Visualization
-        right = ttk.Frame(main_paned)
-        main_paned.add(right, weight=1)
+        r = self.mp_result
+        self.mp_metrics["cpu_util"].config(text=f"{r.cpu_utilization:.1f}%")
+        self.mp_metrics["throughput"].config(text=f"{r.throughput:.3f} proc/unit")
+        self.mp_metrics["avg_turnaround"].config(text=f"{r.avg_turnaround:.2f}")
+        self.mp_metrics["avg_waiting"].config(text=f"{r.avg_waiting:.2f}")
+        self.mp_metrics["avg_response"].config(text=f"{r.avg_response:.2f}")
+        self.mp_metrics["ctx_switches"].config(text=str(r.context_switches))
+        self.mp_metrics["max_mp"].config(text=str(r.degree_of_multiprogramming))
         
-        self._create_mpc_visualization(right)
+        self.mp_log.delete(1.0, tk.END)
+        for event in r.schedule:
+            self.mp_log.insert(tk.END, f"[{event.time:6.2f}] {event.process_id:>4} | {event.event_type:<10} | {event.details}\n")
+        
+        self._draw_mp_gantt()
+    
+    def _draw_mp_gantt(self):
+        """Draw multiprogramming Gantt chart."""
+        self.mp_ax.clear()
+        self.mp_ax.set_facecolor(COLORS['bg_panel'])
+        self.mp_ax.tick_params(colors=COLORS['text_secondary'])
+        for spine in self.mp_ax.spines.values():
+            spine.set_color(COLORS['border'])
+        
+        if not self.mp_result:
+            self.mp_canvas.draw()
+            return
+        
+        r = self.mp_result
+        events = r.schedule
+        if not events:
+            self.mp_canvas.draw()
+            return
+        
+        proc_intervals = {}
+        current_proc = None
+        start_time = 0
+        
+        for event in events:
+            if event.event_type == "start":
+                if current_proc:
+                    if current_proc not in proc_intervals:
+                        proc_intervals[current_proc] = []
+                    proc_intervals[current_proc].append((start_time, event.time))
+                current_proc = event.process_id
+                start_time = event.time
+            elif event.event_type in ("preempt", "io", "complete"):
+                if current_proc:
+                    if current_proc not in proc_intervals:
+                        proc_intervals[current_proc] = []
+                    proc_intervals[current_proc].append((start_time, event.time))
+                current_proc = None
+        
+        procs = list(proc_intervals.keys())
+        colors = ['#6c8cff', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#60a5fa']
+        color_map = {p: colors[i % len(colors)] for i, p in enumerate(procs)}
+        
+        y = 0.5
+        for proc, intervals in proc_intervals.items():
+            for start, end in intervals:
+                self.mp_ax.barh(y, end - start, left=start, height=0.6,
+                               color=color_map[proc], edgecolor='white', linewidth=0.5)
+                if end - start > 1:
+                    self.mp_ax.text(start + (end-start)/2, y, proc, ha='center', va='center',
+                                   color='white', fontsize=8, fontweight='bold')
+            y += 1
+        
+        self.mp_ax.set_ylim(0, len(procs) + 0.5)
+        self.mp_ax.set_xlim(0, r.total_time * 1.05)
+        self.mp_ax.set_yticks([i + 0.5 for i in range(len(procs))])
+        self.mp_ax.set_yticklabels(procs)
+        self.mp_ax.set_xlabel('Time', color='white')
+        self.mp_ax.set_title('Multiprogramming CPU Timeline', color='white')
+        
+        self.mp_fig.tight_layout()
+        self.mp_canvas.draw()
     
     def _load_sample_data(self):
         """Load sample processes."""
