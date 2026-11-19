@@ -123,8 +123,8 @@ class Window:
         self._drag_data["y"] = event.y_root
     
     def show(self):
-        """Show and maximize the window."""
-        self.frame.state("zoomed")  # Maximize on launch
+        """Show and maximize the window within the desktop workspace."""
+        self._apply_maximized_geometry()
         self.frame.deiconify()
         self.frame.lift()
         self.frame.focus_force()
@@ -143,14 +143,22 @@ class Window:
     
     def toggle_maximize(self):
         if self.is_maximized:
-            self.frame.state("normal")
             self.frame.geometry(f"{self.width}x{self.height}")
             self.maximize_btn.config(text="□")
             self.is_maximized = False
         else:
-            self.frame.state("zoomed")
+            self._apply_maximized_geometry()
             self.maximize_btn.config(text="❐")
             self.is_maximized = True
+    
+    def _apply_maximized_geometry(self):
+        """Size the window to fill the desktop workspace below the taskbar."""
+        screen_w = self.parent.winfo_screenwidth()
+        screen_h = self.parent.winfo_screenheight()
+        taskbar_h = 40  # matches the taskbar frame height in _setup_taskbar
+        available_h = screen_h - taskbar_h
+        
+        self.frame.geometry(f"{screen_w}x{available_h}+0+0")
     
     def close(self):
         self.frame.destroy()
@@ -435,10 +443,7 @@ class DesktopApp:
         self.root.title("Mini OS Simulator")
         self.root.geometry("1200x800")
         self.root.configure(bg=COLORS["desktop_bg"])
-        try:
-            self.root.state("zoomed")  # Maximize on Windows/Linux
-        except tk.TclError:
-            self.root.attributes("-zoomed", True)
+        self._maximize_root_window()
         
         # Window tracking
         self.windows: Dict[str, Window] = {}
@@ -479,6 +484,12 @@ class DesktopApp:
             self.desktop_canvas.create_line(x, 0, x, height, fill=COLORS["desktop_grid"], width=1)
         for y in range(0, height, 50):
             self.desktop_canvas.create_line(0, y, width, y, fill=COLORS["desktop_grid"], width=1)
+
+    def _maximize_root_window(self):
+        """Maximize the root window to fill the screen (Linux-compatible)."""
+        screen_w = self.root.winfo_screenwidth()
+        screen_h = self.root.winfo_screenheight()
+        self.root.geometry(f"{screen_w}x{screen_h}+0+0")
     
     def _setup_taskbar(self):
         """Create the taskbar at the bottom."""
