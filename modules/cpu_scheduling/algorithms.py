@@ -270,6 +270,8 @@ class CPUScheduler:
                         gantt[-1].end_time = current_time
                 current_proc = next_proc
                 prev_pid = next_proc.pid  # Track PID for context switch counting
+                if current_proc.start_time < 0:
+                    current_proc.start_time = current_time
             
             # Execute for 1 time unit (or until next arrival/completion)
             next_event_time = float('inf')
@@ -298,7 +300,7 @@ class CPUScheduler:
             if current_proc.remaining_time <= 0.001:  # Floating point tolerance
                 current_proc.completion_time = current_time
                 if current_proc.start_time < 0:
-                    current_proc.start_time = current_proc.completion_time - current_proc.burst_time
+                    current_proc.start_time = current_time
                 completed.append(current_proc)
                 prev_pid = current_proc.pid  # Save PID before clearing
                 current_proc = None
@@ -429,9 +431,9 @@ class CPUScheduler:
             if current_proc.remaining_time <= 0.001:
                 current_proc.completion_time = current_time
                 if current_proc.start_time < 0:
-                    current_proc.start_time = current_proc.completion_time - current_proc.burst_time
+                    current_proc.start_time = current_time
                 completed.append(current_proc)
-                prev_pid = current_proc.pid  # Save PID before clearing
+                prev_pid = current_proc.pid if current_proc else None
                 current_proc = None
         
         CPUScheduler._calculate_metrics(completed)
@@ -488,6 +490,8 @@ class CPUScheduler:
                 if prev_pid is not None and prev_pid != current_proc.pid:
                     context_switches += 1
                 prev_pid = current_proc.pid
+                if current_proc.start_time < 0:
+                    current_proc.start_time = current_time
             
             if current_proc:
                 exec_time = min(time_quantum, current_proc.remaining_time)
@@ -514,7 +518,7 @@ class CPUScheduler:
                 if current_proc.remaining_time <= 0.001:
                     current_proc.completion_time = current_time
                     if current_proc.start_time < 0:
-                        current_proc.start_time = current_proc.completion_time - current_proc.burst_time
+                        current_proc.start_time = current_time
                     completed.append(current_proc)
                     current_proc = None
                 else:

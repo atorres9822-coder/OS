@@ -51,6 +51,7 @@ class SimulatedProcess:
     remaining_time: float = 0.0
     cpu_time_used: float = 0.0      # Total CPU time consumed
     cpu_since_io: float = 0.0       # CPU time since last I/O (for I/O frequency)
+    slice_elapsed: float = 0.0          # CPU time elapsed in current time slice (RR)
     io_time_remaining: float = 0.0
     start_time: float = -1.0
     completion_time: float = 0.0
@@ -225,6 +226,7 @@ class ProcessManager:
                     last_pid = candidate.pid
 
                     running_proc = candidate
+                    running_proc.slice_elapsed = 0.0
                     if running_proc.start_time < 0:
                         running_proc.start_time = current_time
                         running_proc.response_time = current_time - running_proc.arrival_time
@@ -245,6 +247,7 @@ class ProcessManager:
                 selected = select_from_ready(ready_queue)
                 remove_from_ready(ready_queue, selected)
                 running_proc = selected
+                running_proc.slice_elapsed = 0.0
 
                 # Context switch: from idle or different PID
                 if last_pid is None or last_pid != running_proc.pid:
@@ -286,7 +289,10 @@ class ProcessManager:
             # 7. Determine run duration
             run_time = running_proc.remaining_time
             if algorithm == SchedulingAlgorithm.ROUND_ROBIN:
-                run_time = min(run_time, time_slice)
+                remaining_slice = time_slice - running_proc.slice_elapsed
+                if remaining_slice <= 0:
+                    remaining_slice = time_slice
+                run_time = min(run_time, remaining_slice)
 
             # Cap at next arrival
             if process_idx < n_procs:
@@ -315,6 +321,8 @@ class ProcessManager:
             running_proc.remaining_time -= run_time
             running_proc.cpu_time_used += run_time
             running_proc.cpu_since_io += run_time
+            if algorithm == SchedulingAlgorithm.ROUND_ROBIN:
+                running_proc.slice_elapsed += run_time
 
             # 9. Check process completion
             if running_proc.remaining_time <= 0.001:
@@ -365,10 +373,11 @@ class ProcessManager:
                 continue
 
             # 11. Check time slice expiration (RR only)
-            if algorithm == SchedulingAlgorithm.ROUND_ROBIN and run_time >= time_slice - 0.001:
+            if algorithm == SchedulingAlgorithm.ROUND_ROBIN and running_proc.slice_elapsed >= time_slice - 0.001:
                 # If no other processes are waiting, same process continues
                 # without any context switch or redundant preempt/start events
                 if len(ready_queue) == 0:
+                    running_proc.slice_elapsed = 0.0
                     running_proc.record_state_change(current_time, ProcessState.RUNNING, TransitionReason.SCHEDULED.value)
                     schedule.append(CPUScheduleEvent(
                         time=current_time,
@@ -380,6 +389,7 @@ class ProcessManager:
                     # running_proc continues, no context switch, no last_pid change
                 else:
                     # Other processes waiting - preempt current process
+                    running_proc.slice_elapsed = 0.0
                     running_proc.record_state_change(current_time, ProcessState.READY, TransitionReason.TIMEOUT.value)
                     ready_queue.append(running_proc)
 
