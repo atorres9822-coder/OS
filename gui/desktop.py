@@ -479,7 +479,6 @@ class StartMenu:
             ("Memory Manager", "🧠", lambda: self.desktop_app.open_module("memory")),
             ("Disk Scheduler", "💽", lambda: self.desktop_app.open_module("disk_scheduling")),
             ("Process Manager", "⚙️", lambda: self.desktop_app.open_module("process_manager")),
-            ("System Monitor", "📊", lambda: self.desktop_app.open_module("system_monitor")),
         ]
         
         for name, icon, cmd in apps:
@@ -702,7 +701,6 @@ class DesktopApp:
             ("Memory Manager", "memory", lambda: self.open_module("memory")),
             ("Disk Scheduler", "disk_scheduling", lambda: self.open_module("disk_scheduling")),
             ("Process Manager", "process_manager", lambda: self.open_module("process_manager")),
-            ("System Monitor", "system_monitor", lambda: self.open_module("system_monitor")),
         ]
 
         # Vertical column on left side of desktop
